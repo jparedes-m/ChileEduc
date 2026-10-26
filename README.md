@@ -16,6 +16,8 @@ The datasets include:
 
 ## Dataset Details
 
+A PDF version of this overview is in [`docs/Data Organization.pdf`](docs/Data%20Organization.pdf).
+
 ### 1. Kinder
 - Records the yearly attendance of children enrolled in three programs:
   1. **Sistema de Información General de Estudiantes (SIGE)**
