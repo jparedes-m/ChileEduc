@@ -124,6 +124,8 @@ pl.scan_parquet(ANALYSIS / "cohort_panel.parquet").filter(in_sample(SAMPLE_FRACT
 )
 
 pl.Config.set_tbl_rows(40)
+pl.Config.set_tbl_cols(20)
+print("Percentages are of all the children of each cohort and entry year.")
 print(
     cohorts.group_by("cohort", "entry_year")
     .agg(
@@ -131,8 +133,8 @@ print(
         (100 * pl.col("finished").mean()).round(1).alias("% finished"),
         (100 * pl.col("on_time").mean()).round(1).alias("% on time"),
         (100 * pl.col("left").mean()).round(1).alias("% left"),
-        (100 * (pl.col("exit_to") == "adult_education").mean()).round(1).alias("% to adults"),
-        (100 * (pl.col("exit_to") == "not_seen_again").mean()).round(1).alias("% not seen"),
+        (100 * (pl.col("exit_to") == "adult_education").fill_null(False).mean()).round(1).alias("% to adults"),
+        (100 * (pl.col("exit_to") == "not_seen_again").fill_null(False).mean()).round(1).alias("% not seen"),
         (100 * pl.col("censored").mean()).round(1).alias("% censored"),
     )
     .sort("cohort", "entry_year")
