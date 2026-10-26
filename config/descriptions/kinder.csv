@@ -1,0 +1,53 @@
+variable,description,values,notes
+year,Año del proceso (AGNO),,
+month,Mes del proceso (MES),,Desde 2013. La información es al 30 de abril de cada año, descargada en agosto (2011: noviembre).
+mrun,Máscara del RUN del alumno,,Identificador del estudiante; el mismo que en assistance y performance.
+sex_stud,"Sexo del alumno (SEXO_ALU, desde 2019 GEN_ALU)",0: Sin información; 1: Hombre; 2: Mujer,
+birth_date_stud,Fecha de nacimiento del alumno (AAAAMM),190001: Sin información,
+school_id,Identificador del establecimiento (ID_ESTAB),,Un establecimiento se identifica con school_id y origen juntos.
+rbd,Rol base de datos del establecimiento (MINEDUC),,Desde 2014. Solo filas MINEDUC.
+id_estab_j,Identificador del establecimiento JUNJI,,Desde 2014. Solo filas JUNJI.
+id_estab_i,Identificador del establecimiento INTEGRA,,Desde 2014. Solo filas INTEGRA.
+nom_estab,Nombre del establecimiento,,
+cod_reg_estab,Código de la región del establecimiento,,
+cod_pro_estab,Código de la provincia del establecimiento,,
+cod_com_estab,Código oficial (SUBDERE) de la comuna del establecimiento,,
+nom_reg_estab,Nombre de la región del establecimiento,,
+nom_reg_a_estab,Nombre abreviado de la región del establecimiento,,Desde 2019.
+nom_pro_estab,Nombre de la provincia del establecimiento,,
+nom_com_estab,Nombre de la comuna del establecimiento,,
+cod_deprov_estab,Código del Departamento Provincial de Educación del establecimiento,0: No aplica,Desde 2015.
+nom_deprov_estab,Nombre del Departamento Provincial de Educación del establecimiento,en blanco: No aplica,Desde 2015.
+latitude,Latitud del establecimiento (LATITUD),,"Desde 2016. Solo referencial según MINEDUC. Valores como ""(EN LAVANTAMIENTO)"" o ""NO APLICA"" quedan vacíos."
+longitude,Longitud del establecimiento (LONGITUD),,Desde 2016. Solo referencial según MINEDUC.
+rural_establishment,Área geográfica del establecimiento (RURAL_ESTAB),0: Urbana; 1: Rural,
+origen,Origen del dato: institución que reporta al niño,1: MINEDUC (SIGE); 2: JUNJI; 3: INTEGRA,"Cada fila viene de un solo origen. Si un niño aparece en más de uno, MINEDUC deja el registro de MINEDUC, o uno al azar entre los demás."
+dependencia,Dependencia administrativa del establecimiento,1: Municipal; 2: Particular Subvencionado; 3: Particular Pagado; 4: JUNJI; 5: INTEGRA; 6: Servicio Local de Educación,1-3 y 6 corresponden a MINEDUC.
+nivel1,"Nivel del alumno, en 6 niveles",1: Sala cuna menor; 2: Sala cuna mayor; 3: Medio menor; 4: Medio mayor; 5: Transición menor; 6: Transición mayor,Comparable entre los tres orígenes.
+nivel2,"Nivel del alumno, en 3 niveles",1: Sala cuna; 2: Medio; 3: Transición,Comparable entre los tres orígenes.
+cod_ense1_m,Código de nivel de enseñanza (MINEDUC),10: Educación parvularia; 211-219: Educación especial; 299: Opción 4 Programa de Integración Escolar; .: No aplica,"Solo filas MINEDUC; en JUNJI e INTEGRA es ""."" y queda vacío. La base limpia saca las filas MINEDUC distintas de 10."
+cod_grado_m,Grado en que está matriculado el alumno (MINEDUC),"Con cod_ense1_m 10, hasta 2018: 1 Sala cuna; 2 Medio menor; 3 Medio mayor; 4 Pre-kinder; 5 Kinder. Desde 2019: 1 Sala cuna mayor; 2 Medio menor; 3 Medio mayor; 4 Pre-kinder; 5 Kinder; 6 Sala cuna menor; 7-10 Heterogéneos",Los códigos cambiaron en 2019 (ver Anexo II del esquema 2011-2023).
+let_cur_m,Letra del curso del alumno (MINEDUC),,Desde 2012.
+cod_tip_cur_m,Índice de tipo de curso (MINEDUC),0: Curso simple; 1-2: Curso combinado; 99: Sin información,Desde 2019. Solo se pueden combinar pre-kinder y kinder.
+cod_depe1_m,Código de dependencia (MINEDUC),1: Corp. Municipal; 2: Municipal (DAEM); 3: Particular Subvencionado; 4: Particular Pagado; 6: Servicio Local de Educación,
+cod_ense2_m,Recodificación del código de enseñanza (MINEDUC),1: Educación parvularia; 4: Educación especial,Desde 2013. Solo filas MINEDUC.
+estado_estab_m,Estado de funcionamiento del establecimiento (MINEDUC),1: Funcionando; 2: En receso; 3: Cerrado; 4: Autorizado sin matrícula,Desde 2015. Los niños en establecimientos funcionando son todos los de JUNJI e INTEGRA más los de MINEDUC con estado_estab_m = 1.
+corr_gru_j,Grupo JUNJI,,Desde 2012.
+let_gru_j,Letra del grupo JUNJI,,Desde 2012.
+cod_prog_j,Código de programa JUNJI,1: Jardín infantil de administración directa; 2: Jardín infantil alternativo; 3: Educativo para la familia; 4: Jardín infantil VTF; 6: Convenio alimentación,Desde 2012.
+desc_prog_j,Descripción del programa JUNJI,,
+cod_nivel_j,Código de nivel JUNJI,0: Sala cuna heterogénea; 1: Sala cuna menor; 2: Sala cuna mayor; 3: Medio menor; 4: Medio mayor; 5: Transición I; 6: Transición II; 7: Sala cuna no convencional; 8: Medio y transición no convencional; 9: Medio y transición convencional; 11: Nivel medio mixto,"Así en el esquema 2011-2023; el 11 no existe en versiones anteriores. Para comparar años, usar desc_nivel_j o nivel1/nivel2."
+desc_nivel_j,Descripción del nivel JUNJI,,Desde 2012.
+cod_modal_j,Código de modalidad JUNJI,"1: Jardín infantil; 2: Jardín familiar; 6, 12, 13, 91: Jardín comunicacional; 7: Jardín étnico; 8: Jardín laboral; 10: Jardín comunitario; 92: Conozca a su hijo (CASH); 93: PMI; 94: CECI",
+desc_modal_j,Nombre de la modalidad JUNJI,,
+cod_jor_j,Código de jornada (JUNJI),1: Completa; 2: Mañana; 3: Tarde; 4: Extendida; 5: Semipresencial; 6: Vespertina,Desde 2012. Solo filas JUNJI.
+nom_jor_j,Descripción de la jornada (JUNJI),,Desde 2012.
+asis_real_j,Asistencia real (JUNJI),,
+asis_poten_j,Asistencia potencial (JUNJI),,
+dias_trab_grupo_j,Días trabajados por el grupo JUNJI,,
+desc_mod_i,Modalidad del establecimiento INTEGRA,,
+desc_niv_i,Descripción del nivel INTEGRA,,Desde 2012.
+cod_nivel_i,Código de nivel INTEGRA,Esquema 2011-2023: 1: Sala cuna menor; 2: Sala cuna mayor; 3: Medio menor; 4: Medio mayor; 5: Transición menor; 6: Transición mayor; 7: Sala cuna heterogéneo; 8: Medio heterogéneo; 9: Transición heterogéneo; 10: Medio y transición heterogénea,"Las versiones anteriores del esquema usan otros códigos (p. ej. 3: Sala cuna, 6: Medios, 9: Transiciones). Para comparar años, usar desc_niv_i o nivel1/nivel2."
+cod_grupo_i,Código de grupo INTEGRA,,
+tipo_sostenedor,Código de sostenedor,"1: Municipal; 2: Servicio Local; 3: Privado (fundación, ONG, etc.); en blanco: No aplica",Desde 2021. Solo JUNJI VTF e INTEGRA convenio.
+formal,Indicador de educación formal en modalidades y programas,0: No; 1: Sí,Desde 2020.

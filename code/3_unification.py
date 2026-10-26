@@ -105,8 +105,11 @@ for dataset in DATASETS:
                 from_name = pl.lit(str(value))
                 df = df.with_columns(pl.coalesce(column, from_name).alias(column) if column in df.columns else from_name.alias(column))
 
-        # Types, and a warning for values that could not be read as numbers
+        # Types, and a warning for values that could not be read as numbers.
+        # MINEDUC writes "." for "no information" or "does not apply" in numeric columns: that is just missing.
         types = TYPES[dataset]
+        numeric = [c for c in df.columns if types.get(c, pl.String) != pl.String]
+        df = df.with_columns(pl.when(pl.col(c).str.strip_chars() == ".").then(None).otherwise(pl.col(c)).alias(c) for c in numeric)
         typed = df.select(as_type(c, types.get(c, pl.String)) for c in df.columns)
         for c in typed.columns:
             lost = ((df[c].str.strip_chars().fill_null("") != "") & typed[c].is_null()).sum()
@@ -114,10 +117,10 @@ for dataset in DATASETS:
                 print(f"  {f.stem}: {lost} values of {c} are not numbers, set to null")
 
         # Regular education only
-        if dataset == "kinder" and year < 2012:
-            keep = pl.col("cod_ense1_m") == 10  # no special education
-        elif dataset == "kinder":
-            keep = (pl.col("cod_ense2_m") == 1) & pl.col("cod_jor_j").is_in([1, 2])  # full day or morning
+        if dataset == "kinder":
+            # Each row comes from one program (origen 1 MINEDUC, 2 JUNJI, 3 INTEGRA), and cod_ense1_m only
+            # exists for MINEDUC rows: keep all of JUNJI and INTEGRA, and MINEDUC without special education.
+            keep = (pl.col("origen") != 1) | (pl.col("cod_ense1_m") == 10)
         else:
             keep = pl.col("cod_ense").is_in(REGULAR_ENSE)
         clean = typed.filter(keep)

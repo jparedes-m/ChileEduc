@@ -58,6 +58,9 @@ def write_mapping(path):
         ws.append(row)
     ws = wb.create_sheet("kinder")
     ws.append(["desired_names", 2015])
+    for row in [["year", "AGNO"], ["mrun", "MRUN"], ["origen", "ORIGEN"], ["cod_ense1_m", "COD_ENSE1_M"],
+                ["cod_jor_j", "COD_JOR_J"]]:
+        ws.append(row)
     wb.save(path)
 
 
@@ -95,6 +98,16 @@ def project(tmp_path):
         "Rendimiento 2015/Registro_2015.pdf": b"%PDF-1.4",
     })
 
+    # Kinder: one program per row; only MINEDUC rows have cod_ense1_m, only JUNJI rows have cod_jor_j
+    kinder = (
+        "AGNO;MRUN;ORIGEN;COD_ENSE1_M;COD_JOR_J\n"
+        "2015;1;1;10;\n"   # MINEDUC, regular: kept
+        "2015;2;1;211;\n"  # MINEDUC, special education: dropped
+        "2015;3;2;.;3\n"   # JUNJI, afternoon: kept
+        "2015;4;3;.;\n"    # INTEGRA: kept
+    ).encode()
+    write_zip(raw / "kinder" / "kinder_2015.zip", {"Parvularia_2015.csv": kinder})
+
     # A zip inside a zip, UTF-8 with BOM
     inner = tmp_path / "inner.zip"
     write_zip(inner, {"asistencia_marzo_2015.csv": "\ufeffAGNO;MES;MRUN;COD_ENSE\n2015;3;1;110\n2015;3;2;110\n".encode()})
@@ -123,6 +136,11 @@ def test_unification(project):
     assert asis.columns == ["year", "month", "mrun", "cod_ense", "agno"]  # AGNO is unmapped, so kept as an extra
     assert asis["year"].to_list() == [2015, 2015]
     assert asis["month"].to_list() == [3, 3]
+
+
+def test_kinder_keeps_the_three_programs(project):
+    kinder = pl.read_parquet(project / "data" / "clean" / "kinder" / "kinder_2015.parquet")
+    assert kinder["mrun"].to_list() == [1, 3, 4]
 
 
 def test_dictionary(project):
