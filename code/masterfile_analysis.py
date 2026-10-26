@@ -24,6 +24,7 @@ import time
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 import polars as pl
 import pyfixest as pf  # regressions with fixed effects, instrumental variables and clustered errors
 
@@ -37,7 +38,7 @@ DATA = ROOT / "data"                        # not in git: it is far too big
 CLEAN = DATA / "clean"        # input: the clean data of flow 1
 ANALYSIS = DATA / "analysis"  # 1_selection to 5_rd_sample: the data of the study
 SAMPLE = DATA / "sample"      # 3_cohorts: the cohort panel for the students of the sample
-RESULTS = ROOT / "results"    # 6_rd_estimates: tables and plots (in git: they are small summaries)
+RESULTS = ROOT / "results"    # 6_rd_estimates, 7_rd_figure: tables and plots (in git: they are small summaries)
 
 # [2] Settings ----
 # grado: 0 kinder, 1-8 = 1° to 8° básico, 9-12 = 1° to 4° medio. Normal age = 5 + grado.
@@ -80,5 +81,6 @@ source("analysis/3_cohorts.py")
 source("analysis/4_tracking.py")
 source("analysis/5_rd_sample.py")
 source("analysis/6_rd_estimates.py")
+source("analysis/7_rd_figure.py")
 
 # [End-of-file] ----

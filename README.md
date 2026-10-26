@@ -134,6 +134,7 @@ Rows keep their original frequency: student x month in assistance, student x yea
 | `4_tracking.py` | Which school-grade-shift-years sort students into courses by last year's GPA, whether their courses were remixed, and the GPA threshold between each pair of courses | `data/analysis/tracking/groups_<year>`, `courses_<year>`, `thresholds_<year>` |
 | `5_rd_sample.py` | The students within `RD_BANDWIDTH` of a sharp threshold, with their outcomes that year, one and two years later, and at the end of school | `data/analysis/rd_sample.parquet` |
 | `6_rd_estimates.py` | The effect of being sent to the higher course: first stage, reduced form and instrumental variables, local linear on each side of the threshold, with a fixed effect per threshold and errors clustered by school, for several bandwidths, with all thresholds and with remixed courses only; balance checks; plots | [`results/rd_estimates.csv`](results), [`results/rd_plots.png`](results) |
+| `7_rd_figure.py` | The figure that motivates the design: share in the higher course and number of students at each distance to the threshold, all thresholds and remixed courses only | [`results/rd_first_stage.png`](results) |
 
 The tracking settings (course size, permutations, significance, bandwidth, sharpness) are in
 `code/masterfile_analysis.py`. Set `TRACKING_SCHOOL_FRACTION = 0.05` to try it fast on 5% of the schools.

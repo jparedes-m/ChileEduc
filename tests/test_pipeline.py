@@ -321,6 +321,7 @@ def test_rd_estimates(tracking_project):
                            & (pl.col("sample") == "all thresholds"))
     assert abs(gpa["estimate"][0]) < 1e-6  # GPA is prior + 0.2 for everyone: the higher course changes nothing
     assert (tracking_project.parents[1] / "results" / "rd_plots.png").exists()
+    assert (tracking_project.parents[1] / "results" / "rd_first_stage.png").exists()
 
 
 # [End-of-file] ----
