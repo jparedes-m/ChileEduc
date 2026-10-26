@@ -1,0 +1,28 @@
+variable,description,values,notes
+year,Año del proceso (AGNO),,"No hay 2020 ni 2021: MINEDUC dejó de elaborar la base por la pandemia (de 2020 solo existe marzo, que no está en nuestros datos)."
+month,Mes escolar (MES_ESCOLAR),3 (marzo) a 12 (diciembre),El año escolar chileno tiene 10 meses.
+rbd,Rol base de datos del establecimiento,,Identificador del colegio; el mismo que en performance.
+dgv_rbd,Dígito verificador del RBD,,
+nom_rbd,Nombre del establecimiento,,
+cod_reg_rbd,Código de la región en que se ubica el establecimiento,Ver Anexo I,
+nom_reg_rbd_a,Nombre abreviado de la región en que se ubica el establecimiento,Ver Anexo I,Desde septiembre de 2018.
+cod_pro_rbd,Código de la provincia en que se ubica el establecimiento,Ver Anexo I,Desde junio de 2014.
+cod_com_rbd,Código oficial (SUBDERE) de la comuna en que se ubica el establecimiento,,
+nom_com_rbd,Nombre de la comuna en que se ubica el establecimiento,,
+cod_deprov_rbd,Código del Departamento Provincial de Educación del establecimiento,,Desde 2015.
+nom_deprov_rbd,Nombre del Departamento Provincial de Educación del establecimiento,,Desde 2015.
+rural_rbd,Área geográfica del establecimiento,0: Urbana; 1: Rural,
+cod_depe,Dependencia administrativa,1: Corporación Municipal; 2: Municipal DAEM; 3: Particular Subvencionado; 4: Particular Pagado; 5: Corporación de Administración Delegada; 6: Servicio Local de Educación,"Los datos traen también valores 7 y 8, que ningún esquema de registro documenta."
+cod_depe2,Dependencia del establecimiento (agrupada),1: Municipal; 2: Particular Subvencionado; 3: Particular Pagado (o no subvencionado); 4: Corporación de Administración Delegada (DL 3166); 5: Servicio Local de Educación,Desde junio de 2014.
+cod_ense,Tipo de enseñanza,"10: Educación parvularia; 110: Básica; 310: Media HC niños y jóvenes; 410, 510, 610, 710, 810: Media TP niños y jóvenes; 910: Media artística niños y jóvenes; 165, 167 y los que terminan en 63: adultos; 211-299: educación especial",Ver Anexo II. La base limpia conserva parvularia (10) y la enseñanza regular de niños y jóvenes.
+cod_ense2,Niveles de enseñanza agrupados,1: Educación parvularia; 2: Básica niños; 3: Básica adultos; 4: Educación especial; 5: Media HC jóvenes; 6: Media HC adultos; 7: Media TP y artística jóvenes; 8: Media TP y artística adultos,Desde 2016. Ver Anexo III.
+cod_grado,Código de grado,Con cod_ense 10: 1-5 = sala cuna a kinder. Con 110: 1-8 = 1° a 8° básico. Con media: 1-4 = 1° a 4° medio,Ver Anexo IV; hay una tabla para 2011-2018 y otra desde 2019.
+let_cur,Letra del curso,,"Con rbd, cod_ense y cod_grado identifica el curso."
+mrun,Identificador único del estudiante (máscara del RUN),,"Un estudiante puede tener más de una fila en un mes si se cambió de colegio, de curso o de nivel."
+gen_alu,Sexo del estudiante,0: Sin información; 1: Hombre; 2: Mujer; 3: No binario,En diciembre de 2023 MINEDUC eliminó 2 registros con género no binario para proteger su identidad.
+fec_nac_alu,Fecha de nacimiento del estudiante (AAAAMM),"190001, 180001: Sin información",Algunos valores vienen como AAAAMMDD (el máximo es 20140314). Las fechas atípicas se deben a errores al ingresar el RUN en el SIGE.
+cod_com_alu,Código oficial de la comuna de residencia (autodeclarado y voluntario),0: Sin información (valor por defecto),
+nom_com_alu,Nombre de la comuna de residencia,,
+dias_asistidos,Número total de días asistidos en el mes,,"Puede ser 0 para retirados que siguen en el sistema. Los datos llegan hasta 31 días, más que el máximo de días trabajados (28)."
+dias_trabajados,Número total de días trabajados en el mes,,
+asis_promedio,Proporción de días asistidos respecto de los días trabajados en el mes (0 a 1),,"Es una proporción, no un porcentaje. Hay valores sobre 1 (hasta 2,2) donde los días asistidos superan a los trabajados: tratarlos como errores."
