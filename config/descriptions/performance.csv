@@ -37,7 +37,7 @@ cod_sec,Código de sector económico (solo media TP y artística),Ver Anexo VI,
 cod_espe,Código de especialidad (solo media TP y artística),Ver Anexo VI,
 fec_ing_alu,Fecha de ingreso del alumno al establecimiento,,Solo 2011.
 prom_gral,Promedio general anual,,"No es necesariamente el promedio aritmético de los subsectores. Los retirados tienen 0,0: tratar 0 como sin nota. Entre 3% y 8% de las filas tiene 0 cada año (más bajo en 2020-2021)."
-asistencia,Porcentaje anual de asistencia,,"En 2009 hay 23 valores sobre 100 (máximo 994), errores de digitación: tratarlos como faltantes."
+asistencia,Porcentaje anual de asistencia,,"En 2009 hay 23 valores sobre 100 (máximo 994), probablemente errores de digitación: tratarlos como faltantes."
 sit_fin,Situación de promoción al cierre del año escolar,P: Promovido; R: Reprobado; Y: Retirado; vacío: Sin información,
 sit_fin_r,"Situación de promoción al cierre del año escolar, con indicador de traslado",P: Promovido; R: Reprobado; Y: Retirado; T: Trasladado; vacío: Sin información,"Trasladado: se cambió de establecimiento, o de curso en el mismo establecimiento, durante el año."
 cod_men,Mención (media TP),Ver Anexo X,Código de 8 dígitos: especialidad + mención.
