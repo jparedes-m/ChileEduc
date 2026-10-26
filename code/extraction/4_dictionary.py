@@ -94,7 +94,7 @@ for dataset in DATASETS:
     lines = [
         f"# {dataset.capitalize()}: data dictionary",
         "",
-        "Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and notes come from",
+        "Made by `code/extraction/4_dictionary.py`; do not edit by hand. Descriptions, codes and notes come from",
         f"`config/descriptions/{dataset}.csv`, written from the MINEDUC record layouts in `docs/mineduc/{dataset}/`.",
         "",
         f"{total:,} rows, {per_year.height} years.",

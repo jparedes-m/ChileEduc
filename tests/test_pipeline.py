@@ -1,4 +1,4 @@
-"""Runs masterfile.py on small fake MINEDUC files (everything except scraping) and checks the outputs.
+"""Runs both masterfiles on small fake MINEDUC files (everything except scraping) and checks the outputs.
 
     pip install pytest openpyxl
     pytest
@@ -21,7 +21,7 @@ REPO = Path(__file__).resolve().parents[1]
 
 def functions():
     namespace = {"re": re, "unicodedata": unicodedata, "pl": pl}
-    exec((REPO / "code" / "0_functions.py").read_text(encoding="utf-8"), namespace)
+    exec((REPO / "code" / "extraction" / "0_functions.py").read_text(encoding="utf-8"), namespace)
     return namespace
 
 
@@ -77,7 +77,8 @@ def write_mapping(path):
     ws = wb.create_sheet("assistance")
     ws.append(["desired_names", "2015_03"])
     # "ANIO" is not in the file: year must come from the file name
-    for row in [["year", "ANIO"], ["month", "MES"], ["mrun", "MRUN"], ["cod_ense", "COD_ENSE"], ["fec_nac_alu", "FEC_NAC_ALU"]]:
+    for row in [["year", "ANIO"], ["month", "MES"], ["mrun", "MRUN"], ["cod_ense", "COD_ENSE"], ["fec_nac_alu", "FEC_NAC_ALU"],
+                ["dias_asistidos", "DIAS_ASISTIDOS"], ["dias_trabajados", "DIAS_TRABAJADOS"]]:
         ws.append(row)
     ws = wb.create_sheet("kinder")
     ws.append(["desired_names", 2015])
@@ -91,8 +92,8 @@ def write_mapping(path):
 def project(tmp_path):
     """A copy of the repo with fake raw data, run without the scraping step."""
     shutil.copytree(REPO / "code", tmp_path / "code")
-    master = (REPO / "masterfile.py").read_text(encoding="utf-8")
-    (tmp_path / "masterfile.py").write_text(master.replace('source("1_scraping.py")', '# source("1_scraping.py")'))
+    master = tmp_path / "code" / "masterfile_extraction.py"
+    master.write_text(master.read_text(encoding="utf-8").replace('source("extraction/1_scraping.py")', ""), encoding="utf-8")
     (tmp_path / "config").mkdir()
     write_mapping(tmp_path / "config" / "data_mapping.xlsx")
     (tmp_path / "config" / "descriptions").mkdir()
@@ -135,11 +136,20 @@ def project(tmp_path):
 
     # A zip inside a zip, UTF-8 with BOM
     inner = tmp_path / "inner.zip"
-    write_zip(inner, {"asistencia_marzo_2015.csv": "\ufeffAGNO;MES;MRUN;COD_ENSE;FEC_NAC_ALU\n2015;3;1;110;20050314\n2015;3;2;110;200506\n2015;3;5;110;1990517\n2015;3;6;110;Sep 16 1962\n".encode()})
+    write_zip(inner, {"asistencia_marzo_2015.csv": (
+        "\ufeffAGNO;MES;MRUN;COD_ENSE;FEC_NAC_ALU;DIAS_ASISTIDOS;DIAS_TRABAJADOS\n"
+        "2015;3;1;110;20050314;18;20\n"
+        "2015;3;2;110;200506;20;20\n"
+        "2015;3;5;110;1990517;5;20\n"
+        "2015;3;6;110;Sep 16 1962;0;20\n"
+        "2015;3;8;10;201001;8;20\n"    # kinder child who changed school in March: two records...
+        "2015;3;8;10;201001;9;18\n"    # ...so 17 days attended of 20 worked
+    ).encode()})
     write_zip(raw / "assistance" / "assistance_2015_03.zip", {"carpeta/asistencia.zip": inner.read_bytes()})
 
-    result = subprocess.run([sys.executable, "masterfile.py"], cwd=tmp_path, capture_output=True, text=True)
-    assert result.returncode == 0, result.stderr
+    for masterfile in ("code/masterfile_extraction.py", "code/masterfile_analysis.py"):
+        result = subprocess.run([sys.executable, masterfile], cwd=tmp_path, capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
     return tmp_path
 
 
@@ -158,10 +168,11 @@ def test_unification_keeps_every_record(project):
     assert perf.schema["year"] == pl.Int32 and perf.schema["sit_fin"] == pl.String
 
     asis = pl.read_parquet(project / "data" / "clean" / "assistance" / "assistance_2015_03.parquet")
-    assert asis.columns == ["year", "month", "mrun", "cod_ense", "fec_nac_alu", "agno"]  # AGNO is unmapped: an extra
-    assert asis["fec_nac_alu"].to_list() == [200503, 200506, 199005, 196209]  # every format becomes AAAAMM
-    assert asis["year"].to_list() == [2015] * 4
-    assert asis["month"].to_list() == [3] * 4
+    assert asis.columns == ["year", "month", "mrun", "cod_ense", "fec_nac_alu", "dias_asistidos", "dias_trabajados",
+                            "agno"]  # AGNO is unmapped: an extra
+    assert asis["fec_nac_alu"].to_list() == [200503, 200506, 199005, 196209, 201001, 201001]  # every format: AAAAMM
+    assert asis["year"].to_list() == [2015] * 6
+    assert asis["month"].to_list() == [3] * 6
 
     kinder = pl.read_parquet(project / "data" / "clean" / "kinder" / "kinder_2015.parquet")
     assert kinder["mrun"].to_list() == [8, 2, 3, 10]
@@ -203,14 +214,17 @@ def test_cohorts(project):
     assert kinder[["mrun", "entry_year", "last_grade", "left", "censored"]].rows() == [
         (3, 2015, 0, True, False), (8, 2015, 1, False, True),
     ]
-    cohort_panel = pl.read_parquet(project / "data" / "analysis" / "cohort_panel.parquet")
-    assert cohort_panel.filter(pl.col("mrun") == 8)["grado"].sort().to_list() == [0, 1]
+    cohort_panel = pl.read_parquet(project / "data" / "analysis" / "cohort_panel.parquet").sort("year")
+    child = cohort_panel.filter(pl.col("mrun") == 8)
+    assert child["grado"].to_list() == [0, 1]
+    assert child[["asis_dias_asistidos", "asis_dias_trabajados", "asis_meses"]].row(0) == (17, 20, 1)
+    assert child["asis_anual"].to_list() == [0.85, None]  # no attendance data for 2016
 
 
 def test_rerun_keeps_existing_files(project):
     target = project / "data" / "clean" / "performance" / "performance_2015.parquet"
     before = target.stat().st_mtime_ns
-    subprocess.run([sys.executable, "masterfile.py"], cwd=project, check=True, capture_output=True)
+    subprocess.run([sys.executable, "code/masterfile_extraction.py"], cwd=project, check=True, capture_output=True)
     assert target.stat().st_mtime_ns == before
 
 

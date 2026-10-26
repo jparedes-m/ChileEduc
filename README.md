@@ -46,38 +46,49 @@ The code runs on your own computer; GitHub only keeps the versions of the code (
 
 ```bash
 pip install -r requirements.txt
-python masterfile.py
+python code/masterfile_extraction.py   # flow 1: the MINEDUC data, clean
+python code/masterfile_analysis.py     # flow 2: the data of the study
 ```
 
-`masterfile.py` loads the libraries, sets the paths and settings, and then runs each script of `code/` with
-`source()`, like in R. To skip a step, comment out its `source()` line. Every script skips the files it already
-made, so rerunning only processes new years. There are two flows:
+Each masterfile loads the libraries, sets the paths and settings, and then runs its scripts with `source()`,
+like in R. To skip a step, comment out its `source()` line. Every script skips the files it already made, so
+rerunning only processes new years.
 
-**Flow 1, data (`code/`)**: the MINEDUC files as published, with the same columns, names and types every year.
-No record is dropped.
+**Flow 1, extraction (`code/masterfile_extraction.py`, scripts in `code/extraction/`)**: the MINEDUC files as
+published, with the same columns, names and types every year. No record is dropped.
 
 | Script | What it does | Output |
 |--------|--------------|--------|
-| `0_functions.py` | Small functions used by several scripts | |
+| `0_functions.py` | Small functions used by several scripts (also by flow 2) | |
 | `1_scraping.py` | Downloads the .zip/.rar files from datosabiertos.mineduc.cl | `data/raw/<dataset>/performance_2015.zip`, `assistance_2015_03.rar`, ... |
 | `2_extraction.py` | Unpacks them and saves the data as parquet; keeps the PDFs and codebooks | `data/intermediate/<dataset>/*.parquet`, `data/docs/<dataset>/` |
 | `3_unification.py` | Same columns, names and types every year | `data/clean/<dataset>/*.parquet` |
 | `4_dictionary.py` | Data dictionary: type, description, codes, years and coverage of every variable | [`docs/dictionary/<dataset>.md`](docs/dictionary) |
 | `5_sampling.py` | Sample of students (2%, 0.5% in assistance) with all their rows | `data/sample/<dataset>_sample.parquet` |
 
-**Flow 2, analysis data (`code/analysis/`)**: who goes into the study.
+Rows keep their original frequency: student x month in assistance, student x year in kinder and performance.
+
+**Flow 2, analysis (`code/masterfile_analysis.py`, scripts in `code/analysis/`)**: who goes into the study.
 
 | Script | What it does | Output |
 |--------|--------------|--------|
-| `analysis/1_selection.py` | One row per student and year, kinder (NT2) to 4° medio of regular education for children and youth. Drops special and adult education, the records of withdrawn or transferred-out students, and implausible ages; adds age and rezago | `data/analysis/panel/panel_<year>.parquet`, `data/analysis/withdrawals/` |
-| `analysis/2_cohorts.py` | Follows the cohorts in `COHORTS`: kinder 2011-2015 to 8° básico, and 1° básico 2002-2012 to 4° medio | `data/analysis/cohorts.parquet`, `data/analysis/cohort_panel.parquet` |
+| `1_selection.py` | One row per student and year, kinder (NT2) to 4° medio of regular education for children and youth. Drops special and adult education, the records of withdrawn or transferred-out students (kept in a withdrawals table) and implausible ages; adds age and rezago | `data/analysis/panel/`, `data/analysis/withdrawals/` |
+| `2_attendance.py` | Yearly attendance of each student from the monthly assistance data | `data/analysis/attendance/` |
+| `3_cohorts.py` | Follows the cohorts in `COHORTS` (kinder 2011-2015 to 8° básico, 1° básico 2002-2012 to 4° medio), joins the attendance, and says how each child ended | `data/analysis/cohort_panel.parquet`, `data/analysis/cohorts.parquet` |
 
-In the panel, `grado` is 0 for kinder, 1-8 for 1° to 8° básico and 9-12 for 1° to 4° medio; the normal age is
-`5 + grado` and `rezago` is how many years a student is above it. In the cohorts, `finished` means promoted in the
-last grade, `left` means not finished and not seen in the last year of the data, and `censored` means still in
-school at the end of the data.
+**The final data is `data/analysis/cohort_panel.parquet`**: one row per child and year of each cohort, with
 
-Rows keep their original frequency: student x month in assistance, student x year in kinder and performance.
+- who and when: `cohort`, `entry_year`, `year`, `mrun`, `gen_alu`, `fec_nac_alu`, `edad`, `rezago`
+- where: `grado` (0 kinder, 1-8 = 1° to 8° básico, 9-12 = 1° to 4° medio), `rbd` (or `id_estab_parv` and
+  `origen` in kinder), `cod_ense`, `let_cur` (the course), `cod_tip_cur`, `cod_jor`, `cod_depe`, `rural_rbd`, `cod_com_rbd`
+- how it went: `prom_gral` (GPA, missing when 0), `asistencia` (yearly %, from performance), `sit_fin`
+  (P promoted, R failed), `int_alu`, `n_registros` (records the student had that year)
+- attendance from assistance: `asis_anual` (0 to 1), `asis_dias_asistidos`, `asis_dias_trabajados`, `asis_meses`
+  (none in 2020 and 2021)
+
+and `data/analysis/cohorts.parquet` has one row per child and cohort: `finished` (promoted in the last grade),
+`on_time`, `left` (not finished and not seen in the last year of the data), `censored` (still in school at the
+end of the data), `repetitions`, `withdrawals`, `years_seen`, `last_grade`.
 
 Unification needs `config/data_mapping.xlsx`, and the dictionary takes the variable descriptions from
 `config/descriptions/` (see `config/README.md`). The MINEDUC documentation behind them is in [`docs/mineduc/`](docs/mineduc). RAR files need 7-Zip or unrar installed.

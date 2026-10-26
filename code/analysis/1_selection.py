@@ -9,6 +9,7 @@
 #     for their grade (rezago). Rows outside REZAGO_MIN..REZAGO_MAX are dropped as implausible
 #   - prom_gral 0 (no grade) and asistencia over 100 (input errors) set to missing
 # Writes data/analysis/panel/panel_<year>.parquet and data/analysis/withdrawals/withdrawals_<year>.parquet.
+# asistencia here is the yearly attendance (%) that performance reports; A2 adds the one from assistance.
 # Years already done are skipped.
 #
 # grado: 0 kinder, 1-8 = 1° to 8° básico, 9-12 = 1° to 4° medio. Normal age: 5 + grado.

@@ -1,12 +1,14 @@
-# [A2] Cohorts ----
+# [A3] Cohorts ----
 # Follows the cohorts in COHORTS through the panel of A1. A child enters a cohort the first year they
 # are in its starting grade, as long as they were never in that grade or a higher one before (so a
 # repeater is not counted as entering again). Their rows are followed until the cohort's last grade.
 # Writes, on every run:
+#   data/analysis/cohort_panel.parquet  THE FINAL DATA: one row per child and year of every cohort, with
+#                                       the panel of A1 (grade, school, course, GPA, final status) and the
+#                                       yearly attendance of A2
 #   data/analysis/cohorts.parquet       one row per child and cohort: entry, last year and grade seen,
 #                                       repetitions, withdrawals and how they ended
-#   data/analysis/cohort_panel.parquet  the yearly rows of every cohort member, with their cohort
-#   data/sample/cohort_panel_sample.parquet, the same for the students of the sample
+#   data/sample/cohort_panel_sample.parquet, the final data for the students of the sample
 #
 # How each child ends:
 #   finished  promoted in the cohort's last grade
@@ -17,6 +19,7 @@
 
 panel = pl.scan_parquet(ANALYSIS / "panel" / "panel_*.parquet")
 withdrawals = pl.scan_parquet(ANALYSIS / "withdrawals" / "withdrawals_*.parquet")
+attendance = pl.scan_parquet(ANALYSIS / "attendance" / "attendance_*.parquet")
 last_year = panel.select(pl.col("year").max()).collect().item()
 
 cohorts, cohort_rows = [], []
@@ -33,6 +36,7 @@ for name, cohort in COHORTS.items():
     rows = (
         panel.join(members, on="mrun")
         .filter((pl.col("year") >= pl.col("entry_year")) & pl.col("grado").is_between(first, last))
+        .join(attendance, on=["year", "mrun"], how="left")
         .with_columns(cohort=pl.lit(name))
     )
     left_school = (
@@ -68,7 +72,7 @@ cohorts = pl.concat(cohorts).sort("cohort", "entry_year", "mrun").collect()
 cohorts.write_parquet(ANALYSIS / "cohorts.parquet", compression="zstd")
 pl.concat(cohort_rows).sink_parquet(ANALYSIS / "cohort_panel.parquet", compression="zstd")
 SAMPLE.mkdir(parents=True, exist_ok=True)
-pl.scan_parquet(ANALYSIS / "cohort_panel.parquet").filter(in_sample(SAMPLE_FRACTION["performance"])).sink_parquet(
+pl.scan_parquet(ANALYSIS / "cohort_panel.parquet").filter(in_sample(SAMPLE_FRACTION)).sink_parquet(
     SAMPLE / "cohort_panel_sample.parquet", compression="zstd"
 )
 
