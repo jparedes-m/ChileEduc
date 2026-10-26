@@ -21,6 +21,7 @@
 # [0] Libraries ----
 import re
 import time
+import warnings
 from pathlib import Path
 
 import matplotlib
@@ -29,6 +30,9 @@ import polars as pl
 import pyfixest as pf  # regressions with fixed effects, instrumental variables and clustered errors
 
 matplotlib.use("Agg")  # draw plots to files, without opening windows
+# A threshold with a single student in the bandwidth cannot be compared with anyone: pyfixest drops it, as it
+# should, and warns every time. The number of students used is in results/rd_estimates.csv (column n).
+warnings.filterwarnings("ignore", message=r".*singleton fixed effect")
 import matplotlib.pyplot as plt  # noqa: E402
 
 # [1] Paths ----
