@@ -24,7 +24,7 @@ Every file removed from this folder is still in the git history.
 - **`asis_promedio` is a proportion** (0 to 1) of days attended over days worked in the month.
 - **`dias_asistidos` can be 0** for students who left the school but remain in the system.
 - **Teaching codes**: `cod_ense` includes parvularia (10) and special education (211-299) here, unlike
-  performance before 2023. The clean data keeps parvularia and regular education of children and youth.
+  performance before 2023. The analysis panel keeps regular education of children and youth only.
 - **Grade codes**: Anexo IV has one table for 2011-2018 and another from 2019.
 
 The variable descriptions used by the data dictionary are in `config/descriptions/assistance.csv`.

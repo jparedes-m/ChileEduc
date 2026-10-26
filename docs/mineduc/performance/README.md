@@ -16,8 +16,8 @@ tables. Every file removed from this folder is still in the git history.
 ## Points from the record layouts
 
 - **Rows per year**: our raw counts match the official ones for every year (3,376,045 in 2002 ... 3,584,330 in 2023).
-- **2023 adds special education** (`cod_ense` 211-299). This is why 2023 drops more rows than other years
-  in unification: the clean data keeps regular education of children and youth only.
+- **2023 adds special education** (`cod_ense` 211-299), which is why 2023 has more rows than other years.
+  The analysis panel keeps regular education of children and youth only.
 - **2023 is missing 2 records**: MINEDUC removed the only two students with non-binary gender to protect their identity.
 - **`prom_gral` is 0,0 for withdrawn students** (and often for adult and special education). Treat 0 as no grade.
 - **Functioning schools**: from 2015, `estado_estab = 1` gives the students in schools that are open.

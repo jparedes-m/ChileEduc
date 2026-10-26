@@ -50,14 +50,30 @@ def write_zip(path, members):
             z.writestr(name, data)
 
 
+PERFORMANCE_HEADER = "AGNO;RBD;COD_ENSE;COD_GRADO;LET_CUR;MRUN;FEC_NAC_ALU;PROM_GRAL;ASISTENCIA;NOM_RBD;SIT_FIN;SIT_FIN_R"
+PERFORMANCE_2016 = [            # performance 2015 is a Latin-1 file below; 2016 tests the analysis flow
+    "2016;100;110;6;A;1;200501;0,0;20;Escuela Uno;Y;T",   # moved to school 200 during the year...
+    "2016;200;110;6;A;1;200501;6,0;75;Escuela Dos;P;P",   # ...and is kept there
+    "2016;100;110;6;B;2;200401;0,0;10;Escuela Uno;Y;Y",   # withdrew, enrolled nowhere else
+    "2016;100;310;2;A;4;199901;5,5;90;Escuela Uno;P;P",
+    "2016;100;110;1;A;7;198001;5,0;90;Escuela Uno;P;P",   # 36 years old in 1° básico: implausible
+    "2016;100;110;1;A;8;201001;6,1;95;Escuela Uno;P;P",   # kinder in 2015, 1° básico in 2016
+    "2016;100;211;1;A;9;201001;6,0;95;Escuela Uno;P;P",   # special education
+]
+PERFORMANCE_COLUMNS = ["year", "rbd", "cod_ense", "cod_grado", "let_cur", "mrun", "fec_nac_alu", "prom_gral",
+                       "asistencia", "nom_rbd", "sit_fin", "sit_fin_r"]
+KINDER_COLUMNS = ["year", "mrun", "origen", "nivel1", "cod_ense1_m", "cod_jor_j", "rbd", "school_id", "dependencia",
+                  "rural_establishment", "cod_com_estab", "sex_stud", "birth_date_stud"]
+
+
 def write_mapping(path):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "performance"
-    ws.append(["desired_names", 2015])
-    for row in [["year", "AGNO"], ["rbd", "RBD"], ["cod_ense", "COD_ENSE"], ["let_cur", "LET_CUR"],
-                ["mrun", "MRUN"], ["prom_gral", "PROM_GRAL"], ["nom_rbd", "nom_rbd"], ["sit_fin", None]]:
-        ws.append(row)
+    ws.append(["desired_names", 2015, 2016])
+    for name in PERFORMANCE_COLUMNS:
+        published = {"year": "AGNO", "nom_rbd": "nom_rbd"}.get(name, name.upper())  # nom_rbd: case does not matter
+        ws.append([name, None if name.startswith("sit_fin") else published, published])  # no SIT_FIN in 2015
     ws = wb.create_sheet("assistance")
     ws.append(["desired_names", "2015_03"])
     # "ANIO" is not in the file: year must come from the file name
@@ -65,9 +81,9 @@ def write_mapping(path):
         ws.append(row)
     ws = wb.create_sheet("kinder")
     ws.append(["desired_names", 2015])
-    for row in [["year", "AGNO"], ["mrun", "MRUN"], ["origen", "ORIGEN"], ["cod_ense1_m", "COD_ENSE1_M"],
-                ["cod_jor_j", "COD_JOR_J"]]:
-        ws.append(row)
+    for name in KINDER_COLUMNS:
+        ws.append([name, {"year": "AGNO", "school_id": "ID_ESTAB", "rural_establishment": "RURAL_ESTAB", "sex_stud": "GEN_ALU",
+                           "birth_date_stud": "FEC_NAC_ALU"}.get(name, name.upper())])
     wb.save(path)
 
 
@@ -93,25 +109,27 @@ def project(tmp_path):
 
     # Latin-1, decimal commas, a column missing from the mapping (COD_MEN), and documentation next to the data
     perf = (
-        "AGNO;RBD;COD_ENSE;LET_CUR;MRUN;PROM_GRAL;NOM_RBD;COD_MEN\n"
-        "2015;100;110;A;1;6,5;Escuela Ñuñoa;1\n"
-        "2015;100;110;B;2;4,1;Escuela Ñuñoa;0\n"
-        "2015;100;211;A;3;5,0;Escuela Ñuñoa;0\n"  # special education: dropped
-        "2015;100;310;A;4;x;Escuela Ñuñoa;0\n"    # unreadable grade: null
+        "AGNO;RBD;COD_ENSE;COD_GRADO;LET_CUR;MRUN;FEC_NAC_ALU;PROM_GRAL;ASISTENCIA;NOM_RBD;COD_MEN\n"
+        "2015;100;110;5;A;1;200501;6,5;95;Escuela Ñuñoa;1\n"
+        "2015;100;110;5;B;2;200401;4,1;80;Escuela Ñuñoa;0\n"
+        "2015;100;211;5;A;3;200501;5,0;90;Escuela Ñuñoa;0\n"  # special education
+        "2015;100;310;1;A;4;199901;x;150;Escuela Ñuñoa;0\n"   # unreadable grade, attendance over 100
     ).encode("latin-1")
     write_zip(raw / "performance" / "performance_2015.zip", {
         "Rendimiento 2015/20160101_Rendimiento_2015.csv": perf,
         "Rendimiento 2015/Frecuencia_2015.csv": b"a;b\n1;2\n",
         "Rendimiento 2015/Registro_2015.pdf": b"%PDF-1.4",
     })
+    write_zip(raw / "performance" / "performance_2016.zip",
+              {"Rendimiento_2016.csv": "\n".join([PERFORMANCE_HEADER, *PERFORMANCE_2016]).encode()})
 
     # Kinder: one program per row; only MINEDUC rows have cod_ense1_m, only JUNJI rows have cod_jor_j
     kinder = (
-        "AGNO;MRUN;ORIGEN;COD_ENSE1_M;COD_JOR_J\n"
-        "2015;1;1;10;\n"   # MINEDUC, regular: kept
-        "2015;2;1;211;\n"  # MINEDUC, special education: dropped
-        "2015;3;2;.;3\n"   # JUNJI, afternoon: kept
-        "2015;4;3;.;\n"    # INTEGRA: kept
+        "AGNO;MRUN;ORIGEN;NIVEL1;COD_ENSE1_M;COD_JOR_J;RBD;ID_ESTAB;DEPENDENCIA;RURAL_ESTAB;COD_COM_ESTAB;GEN_ALU;FEC_NAC_ALU\n"
+        "2015;8;1;6;10;;100;100;1;0;13101;1;201001\n"   # MINEDUC kinder
+        "2015;2;1;6;211;;100;100;1;0;13101;1;200401\n"  # MINEDUC special education (and in school)
+        "2015;3;2;6;.;3;;5;4;0;13101;2;201002\n"        # JUNJI kinder, afternoon
+        "2015;10;3;5;.;;;6;5;1;13101;2;201101\n"        # INTEGRA pre-kinder
     ).encode()
     write_zip(raw / "kinder" / "kinder_2015.zip", {"Parvularia_2015.csv": kinder})
 
@@ -131,11 +149,11 @@ def test_extraction(project):
     assert sorted(p.name for p in docs.iterdir()) == ["Frecuencia_2015.csv", "Registro_2015.pdf"]
 
 
-def test_unification(project):
+def test_unification_keeps_every_record(project):
     perf = pl.read_parquet(project / "data" / "clean" / "performance" / "performance_2015.parquet")
-    assert perf.columns == ["year", "rbd", "cod_ense", "let_cur", "mrun", "prom_gral", "nom_rbd", "sit_fin", "cod_men"]
-    assert perf["mrun"].to_list() == [1, 2, 4]
-    assert perf["prom_gral"].to_list() == [6.5, 4.1, None]
+    assert perf.columns == [*PERFORMANCE_COLUMNS, "cod_men"]
+    assert perf["mrun"].to_list() == [1, 2, 3, 4]  # special education too
+    assert perf["prom_gral"].to_list() == [6.5, 4.1, 5.0, None]
     assert perf["nom_rbd"][0] == "Escuela Ñuñoa"
     assert perf.schema["year"] == pl.Int32 and perf.schema["sit_fin"] == pl.String
 
@@ -145,23 +163,48 @@ def test_unification(project):
     assert asis["year"].to_list() == [2015] * 4
     assert asis["month"].to_list() == [3] * 4
 
-
-def test_kinder_keeps_the_three_programs(project):
     kinder = pl.read_parquet(project / "data" / "clean" / "kinder" / "kinder_2015.parquet")
-    assert kinder["mrun"].to_list() == [1, 3, 4]
+    assert kinder["mrun"].to_list() == [8, 2, 3, 10]
 
 
 def test_dictionary(project):
     text = (project / "docs" / "dictionary" / "performance.md").read_text(encoding="utf-8")
-    assert "| rbd | Int32 | School id \\| RBD | RBD | 2015 | 100.0 | 100 to 100 |" in text
-    assert "| sit_fin | String | Final status |  |  | 0.0 |  |" in text
+    assert "| rbd | Int32 | School id \\| RBD | RBD | 2015-2016 | 100.0 | 100 to 200 |" in text
+    assert "| sit_fin | String | Final status | SIT_FIN | 2016 | 63.6 |  |" in text
     assert "- **sit_fin**: P: Promoted; R: Failed." in text
     assert "| COD_MEN | 2015 | 1 | cod_men |" in text
 
 
 def test_sampling(project):
     sample = pl.read_parquet(project / "data" / "sample" / "performance_sample.parquet")
-    assert set(sample["mrun"]) <= {1, 2, 4}
+    assert set(sample["mrun"]) <= set(range(1, 11))
+
+
+def panel(project):
+    return pl.read_parquet(project / "data" / "analysis" / "panel" / "panel_*.parquet").sort("year", "mrun")
+
+
+def test_panel_selection(project):
+    p = panel(project)
+    rows = p.select("year", "mrun", "grado", "rbd").rows()
+    assert rows == [
+        (2015, 1, 5, 100), (2015, 2, 5, 100), (2015, 3, 0, None), (2015, 4, 9, 100), (2015, 8, 0, 100),
+        (2016, 1, 6, 200), (2016, 4, 10, 100), (2016, 8, 1, 100),
+    ]  # no special education (3 in 2015 school, 9), no pre-kinder (10), no withdrawn rows, no 36-year-old (7)
+    assert p.filter(pl.col("year") == 2015)["rezago"].to_list() == [0, 1, 0, 2, 0]
+    assert p.filter((pl.col("year") == 2015) & (pl.col("mrun") == 4))[["prom_gral", "asistencia"]].row(0) == (None, None)
+    withdrawals = pl.read_parquet(project / "data" / "analysis" / "withdrawals" / "withdrawals_2016.parquet")
+    assert withdrawals[["mrun", "grado", "rbd"]].rows() == [(2, 6, 100)]
+
+
+def test_cohorts(project):
+    cohorts = pl.read_parquet(project / "data" / "analysis" / "cohorts.parquet")
+    kinder = cohorts.filter(pl.col("cohort") == "kinder_8basico").sort("mrun")
+    assert kinder[["mrun", "entry_year", "last_grade", "left", "censored"]].rows() == [
+        (3, 2015, 0, True, False), (8, 2015, 1, False, True),
+    ]
+    cohort_panel = pl.read_parquet(project / "data" / "analysis" / "cohort_panel.parquet")
+    assert cohort_panel.filter(pl.col("mrun") == 8)["grado"].sort().to_list() == [0, 1]
 
 
 def test_rerun_keeps_existing_files(project):

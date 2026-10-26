@@ -14,11 +14,8 @@ for dataset in DATASETS:
     if not files or target.exists():
         continue
 
-    # A number in [0, 1) for each student: same mrun -> same number, on any computer
-    student_number = ((pl.col("mrun").cast(pl.UInt64) + SEED) * 2654435761 % 2**32) / 2**32
-
     partial = target.with_name(target.name + ".part")
-    pl.scan_parquet(files).filter(student_number < SAMPLE_FRACTION[dataset]).sink_parquet(partial, compression="zstd")
+    pl.scan_parquet(files).filter(in_sample(SAMPLE_FRACTION[dataset])).sink_parquet(partial, compression="zstd")
     partial.replace(target)
     rows = pl.scan_parquet(target).select(pl.len()).collect().item()
     print(f"{dataset}: {rows:,} rows in the sample")

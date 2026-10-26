@@ -17,8 +17,8 @@ Every file removed from this folder is still in the git history.
 - **Three programs in one file**: each row comes from MINEDUC (SIGE), JUNJI or INTEGRA (`origen` 1, 2, 3).
   Variables ending in `_M` only exist for MINEDUC rows, `_J` for JUNJI and `_I` for INTEGRA. A child in more
   than one program appears once: MINEDUC's record wins, otherwise one is picked at random.
-- **The clean data keeps the three programs** and drops special education from MINEDUC (`cod_ense1_m` other
-  than 10). JUNJI and INTEGRA have no special education code.
+- **The analysis panel keeps kinder (NT2) of the three programs** and drops special education from MINEDUC
+  (`cod_ense1_m` other than 10). JUNJI and INTEGRA have no special education code.
 - **Level codes changed**: `cod_grado_m` changed in 2019, `cod_nivel_i` has other codes in the 2023 layout
   than in earlier ones, and `cod_nivel_j` gained code 11. `nivel1` (6 levels) and `nivel2` (3 levels) are
   comparable across programs and years.

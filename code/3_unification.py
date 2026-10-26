@@ -1,7 +1,8 @@
 # [3] Unification ----
-# Gives every year of a dataset the same columns, names, order and types, and keeps
-# regular education only. Reads data/intermediate/<dataset>/ and writes data/clean/<dataset>/
-# (the inputs are never overwritten). Years already unified are skipped.
+# Gives every year of a dataset the same columns, names, order and types. No row is dropped:
+# the clean data has every record MINEDUC published, and the choice of who goes into the
+# analysis is made in code/analysis/. Reads data/intermediate/<dataset>/ and writes
+# data/clean/<dataset>/ (the inputs are never overwritten). Years already unified are skipped.
 #
 # The mapping file (config/data_mapping.xlsx) has one sheet per dataset: a "desired_names"
 # column and one column per year (2015, or 2015_03 for assistance) with that year's original
@@ -47,10 +48,6 @@ TYPES = {
         "int_alu": I32, "gd_alu": I32,
     },
 }
-
-# Regular education (cod_ense, Anexo II of the MINEDUC record layout): 10 parvularia,
-# 110 basica, 310 media HC, 410-910 media TP and artistica. Special and adult education are dropped.
-REGULAR_ENSE = [10, 110, 310, 410, 510, 610, 710, 810, 910]
 
 
 BIRTH_DATES = ("fec_nac_alu", "birth_date_stud")
@@ -134,18 +131,9 @@ for dataset in DATASETS:
             if lost:
                 print(f"  {f.stem}: {lost} values of {c} are not numbers, set to null")
 
-        # Regular education only
-        if dataset == "kinder":
-            # Each row comes from one program (origen 1 MINEDUC, 2 JUNJI, 3 INTEGRA), and cod_ense1_m only
-            # exists for MINEDUC rows: keep all of JUNJI and INTEGRA, and MINEDUC without special education.
-            keep = (pl.col("origen") != 1) | (pl.col("cod_ense1_m") == 10)
-        else:
-            keep = pl.col("cod_ense").is_in(REGULAR_ENSE)
-        clean = typed.filter(keep)
-
         partial = target.with_name(target.name + ".part")
-        clean.write_parquet(partial, compression="zstd")
+        typed.write_parquet(partial, compression="zstd")
         partial.replace(target)
-        print(f"  {f.stem}: {clean.height:,} rows kept of {raw.height:,}")
+        print(f"  {f.stem}: {typed.height:,} rows")
 
 # [End-of-file] ----

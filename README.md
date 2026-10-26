@@ -51,16 +51,31 @@ python masterfile.py
 
 `masterfile.py` loads the libraries, sets the paths and settings, and then runs each script of `code/` with
 `source()`, like in R. To skip a step, comment out its `source()` line. Every script skips the files it already
-made, so rerunning only processes new years.
+made, so rerunning only processes new years. There are two flows:
+
+**Flow 1, data (`code/`)**: the MINEDUC files as published, with the same columns, names and types every year.
+No record is dropped.
 
 | Script | What it does | Output |
 |--------|--------------|--------|
 | `0_functions.py` | Small functions used by several scripts | |
 | `1_scraping.py` | Downloads the .zip/.rar files from datosabiertos.mineduc.cl | `data/raw/<dataset>/performance_2015.zip`, `assistance_2015_03.rar`, ... |
 | `2_extraction.py` | Unpacks them and saves the data as parquet; keeps the PDFs and codebooks | `data/intermediate/<dataset>/*.parquet`, `data/docs/<dataset>/` |
-| `3_unification.py` | Same columns, names and types every year; regular education only | `data/clean/<dataset>/*.parquet` |
+| `3_unification.py` | Same columns, names and types every year | `data/clean/<dataset>/*.parquet` |
 | `4_dictionary.py` | Data dictionary: type, description, codes, years and coverage of every variable | [`docs/dictionary/<dataset>.md`](docs/dictionary) |
 | `5_sampling.py` | Sample of students (2%, 0.5% in assistance) with all their rows | `data/sample/<dataset>_sample.parquet` |
+
+**Flow 2, analysis data (`code/analysis/`)**: who goes into the study.
+
+| Script | What it does | Output |
+|--------|--------------|--------|
+| `analysis/1_selection.py` | One row per student and year, kinder (NT2) to 4° medio of regular education for children and youth. Drops special and adult education, the records of withdrawn or transferred-out students, and implausible ages; adds age and rezago | `data/analysis/panel/panel_<year>.parquet`, `data/analysis/withdrawals/` |
+| `analysis/2_cohorts.py` | Follows the cohorts in `COHORTS`: kinder 2011-2015 to 8° básico, and 1° básico 2002-2012 to 4° medio | `data/analysis/cohorts.parquet`, `data/analysis/cohort_panel.parquet` |
+
+In the panel, `grado` is 0 for kinder, 1-8 for 1° to 8° básico and 9-12 for 1° to 4° medio; the normal age is
+`5 + grado` and `rezago` is how many years a student is above it. In the cohorts, `finished` means promoted in the
+last grade, `left` means not finished and not seen in the last year of the data, and `censored` means still in
+school at the end of the data.
 
 Rows keep their original frequency: student x month in assistance, student x year in kinder and performance.
 

@@ -25,7 +25,7 @@ origen,Origen del dato: institución que reporta al niño,1: MINEDUC (SIGE); 2: 
 dependencia,Dependencia administrativa del establecimiento,1: Municipal; 2: Particular Subvencionado; 3: Particular Pagado; 4: JUNJI; 5: INTEGRA; 6: Servicio Local de Educación,1-3 y 6 corresponden a MINEDUC.
 nivel1,"Nivel del alumno, en 6 niveles",1: Sala cuna menor; 2: Sala cuna mayor; 3: Medio menor; 4: Medio mayor; 5: Transición menor; 6: Transición mayor,Comparable entre los tres orígenes.
 nivel2,"Nivel del alumno, en 3 niveles",1: Sala cuna; 2: Medio; 3: Transición,Comparable entre los tres orígenes.
-cod_ense1_m,Código de nivel de enseñanza (MINEDUC),10: Educación parvularia; 211-219: Educación especial; 299: Opción 4 Programa de Integración Escolar; .: No aplica,"Solo filas MINEDUC; en JUNJI e INTEGRA es ""."" y queda vacío. La base limpia saca las filas MINEDUC distintas de 10."
+cod_ense1_m,Código de nivel de enseñanza (MINEDUC),10: Educación parvularia; 211-219: Educación especial; 299: Opción 4 Programa de Integración Escolar; .: No aplica,"Solo filas MINEDUC; en JUNJI e INTEGRA es ""."" y queda vacío. El panel de análisis saca las filas MINEDUC distintas de 10 (educación especial)."
 cod_grado_m,Grado en que está matriculado el alumno (MINEDUC),"Con cod_ense1_m 10, hasta 2018: 1 Sala cuna; 2 Medio menor; 3 Medio mayor; 4 Pre-kinder; 5 Kinder. Desde 2019: 1 Sala cuna mayor; 2 Medio menor; 3 Medio mayor; 4 Pre-kinder; 5 Kinder; 6 Sala cuna menor; 7-10 Heterogéneos",Los códigos cambiaron en 2019 (ver Anexo II del esquema 2011-2023).
 let_cur_m,Letra del curso del alumno (MINEDUC),,Desde 2012.
 cod_tip_cur_m,Índice de tipo de curso (MINEDUC),0: Curso simple; 1-2: Curso combinado; 99: Sin información,Desde 2019. Solo se pueden combinar pre-kinder y kinder.

@@ -45,4 +45,9 @@ def read_mapping(dataset):
 def year_columns(mapping):
     return [c for c in mapping.columns if c != "desired_names"]
 
+def in_sample(fraction):
+    """The students of the sample: each mrun gets a fixed number in [0, 1), the same on any computer and in
+    every dataset, and the sample is the students below fraction (so a smaller sample is inside a bigger one)."""
+    return ((pl.col("mrun").cast(pl.UInt64) + SEED) * 2654435761 % 2**32) / 2**32 < fraction
+
 # [End-of-file] ----
