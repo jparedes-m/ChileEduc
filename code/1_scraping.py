@@ -1,18 +1,22 @@
 # [1] Scraping ----
 # Downloads every .zip/.rar listed on each dataset page to data/raw/<dataset>/,
 # renamed to performance_2015.zip, assistance_2015_03.rar, etc.
-# Files already downloaded are skipped.
+# Files already downloaded are skipped. If the site cannot be reached, the step says so and
+# the next scripts carry on with the files already on disk.
 
 
 def download(url, target):
     partial = target.with_name(target.name + ".part")  # so a cut download never looks finished
-    with requests.get(url, stream=True, timeout=300) as response:
-        response.raise_for_status()
-        with open(partial, "wb") as f:
-            for chunk in response.iter_content(1 << 20):
-                f.write(chunk)
-    partial.replace(target)
-    print(f"  downloaded {target.name}")
+    try:
+        with requests.get(url, stream=True, timeout=300) as response:
+            response.raise_for_status()
+            with open(partial, "wb") as f:
+                for chunk in response.iter_content(1 << 20):
+                    f.write(chunk)
+        partial.replace(target)
+        print(f"  downloaded {target.name}")
+    except requests.RequestException as error:
+        print(f"  could not download {target.name}: {error}")
 
 
 for dataset, info in DATASETS.items():
@@ -20,8 +24,12 @@ for dataset, info in DATASETS.items():
     folder.mkdir(parents=True, exist_ok=True)
 
     # Read the page and keep the links to .zip/.rar files
-    page = requests.get(info["url"], timeout=60)
-    page.raise_for_status()
+    try:
+        page = requests.get(info["url"], timeout=60)
+        page.raise_for_status()
+    except requests.RequestException as error:
+        print(f"{dataset}: could not reach {info['url']} ({type(error).__name__}), skipped")
+        continue
     links = [urljoin(info["url"], a["href"]) for a in BeautifulSoup(page.text, "html.parser").find_all("a", href=True)]
     links = [link for link in dict.fromkeys(links) if urlparse(link).path.lower().endswith((".zip", ".rar"))]
     if not links:
