@@ -2,10 +2,13 @@
 # Follows the cohorts in COHORTS through the panel of A1. A child enters a cohort the first year they
 # are in its starting grade, as long as they were never in that grade or a higher one before (so a
 # repeater is not counted as entering again). Their rows are followed until the cohort's last grade.
+# A child can be in both cohorts (in kinder in 2011, in 1° básico in 2012).
 # Writes, on every run:
-#   data/analysis/cohort_panel.parquet  THE FINAL DATA: one row per child and year of every cohort, with
-#                                       the panel of A1 (grade, school, course, GPA, final status) and the
-#                                       yearly attendance of A2
+#   data/analysis/cohort_panel.parquet  THE FINAL DATA: one row per child and year, for every child in a
+#                                       cohort, with one column per cohort (cohort_kinder, cohort_basica)
+#                                       holding the year the child entered it, or empty if that year is not
+#                                       part of that cohort. Has the panel of A1 (grade, school, course, GPA,
+#                                       final status) and the yearly attendance of A2
 #   data/analysis/cohorts.parquet       one row per child and cohort: entry, last year and grade seen,
 #                                       repetitions, withdrawals and how they ended
 #   data/sample/cohort_panel_sample.parquet, the final data for the students of the sample
@@ -22,30 +25,50 @@ withdrawals = pl.scan_parquet(ANALYSIS / "withdrawals" / "withdrawals_*.parquet"
 attendance = pl.scan_parquet(ANALYSIS / "attendance" / "attendance_*.parquet")
 last_year = panel.select(pl.col("year").max()).collect().item()
 
-cohorts, cohort_rows = [], []
+
+def in_cohort(name):
+    """The rows of a child that belong to a cohort: from the entry year on, within the cohort's grades."""
+    first, last = COHORTS[name]["start_grade"], COHORTS[name]["end_grade"]
+    return pl.col(name).is_not_null() & (pl.col("year") >= pl.col(name)) & pl.col("grado").is_between(first, last)
+
+
+# Entry year of every child in each cohort
+rows = panel
 for name, cohort in COHORTS.items():
-    first, last = cohort["start_grade"], cohort["end_grade"]
-    entry = panel.filter(pl.col("grado") == first).group_by("mrun").agg(pl.col("year").min().alias("entry_year"))
+    first = cohort["start_grade"]
+    entry = panel.filter(pl.col("grado") == first).group_by("mrun").agg(pl.col("year").min().alias(name))
     came_back = (  # already in this grade or higher before: a repeater, not a new entrant
         panel.join(entry, on="mrun")
-        .filter((pl.col("year") < pl.col("entry_year")) & (pl.col("grado") >= first))
+        .filter((pl.col("year") < pl.col(name)) & (pl.col("grado") >= first))
         .select("mrun").unique()
     )
-    members = entry.join(came_back, on="mrun", how="anti").filter(pl.col("entry_year").is_in(cohort["entry_years"]))
+    members = entry.join(came_back, on="mrun", how="anti").filter(pl.col(name).is_in(cohort["entry_years"]))
+    rows = rows.join(members, on="mrun", how="left")
 
-    rows = (
-        panel.join(members, on="mrun")
-        .filter((pl.col("year") >= pl.col("entry_year")) & pl.col("grado").is_between(first, last))
-        .join(attendance, on=["year", "mrun"], how="left")
-        .with_columns(cohort=pl.lit(name))
-    )
+# One row per child and year: keep the years that belong to at least one of their cohorts
+rows = (
+    rows.with_columns(pl.when(in_cohort(name)).then(pl.col(name)).alias(name) for name in COHORTS)
+    .filter(pl.any_horizontal(pl.col(name).is_not_null() for name in COHORTS))
+    .join(attendance, on=["year", "mrun"], how="left")
+)
+first_columns = ["year", "mrun", *COHORTS, "grado"]
+rows.select(*first_columns, pl.exclude(first_columns)).sort("mrun", "year").sink_parquet(
+    ANALYSIS / "cohort_panel.parquet", compression="zstd"
+)
+
+# How each child ended, cohort by cohort
+cohorts = []
+for name, cohort in COHORTS.items():
+    first, last = cohort["start_grade"], cohort["end_grade"]
+    rows_in = pl.scan_parquet(ANALYSIS / "cohort_panel.parquet").filter(pl.col(name).is_not_null())
+    entries = rows_in.select("mrun", pl.col(name).alias("entry_year")).unique()
     left_school = (
-        withdrawals.join(members, on="mrun")
+        withdrawals.join(entries, on="mrun")
         .filter((pl.col("year") >= pl.col("entry_year")) & pl.col("grado").is_between(first, last))
         .group_by("mrun").agg(pl.len().cast(pl.Int32).alias("withdrawals"))
     )
     summary = (
-        rows.group_by("cohort", "mrun", "entry_year")
+        rows_in.group_by("mrun", pl.col(name).alias("entry_year"))
         .agg(
             pl.len().cast(pl.Int32).alias("years_seen"),
             pl.col("year").max().alias("last_year"),
@@ -55,6 +78,7 @@ for name, cohort in COHORTS.items():
         )
         .join(left_school, on="mrun", how="left")
         .with_columns(
+            pl.lit(name).alias("cohort"),
             pl.col("withdrawals").fill_null(0),
             finished=pl.col("finish_year").is_not_null(),
             on_time=pl.col("finish_year") == pl.col("entry_year") + (last - first),
@@ -66,11 +90,10 @@ for name, cohort in COHORTS.items():
         )
     )
     cohorts.append(summary)
-    cohort_rows.append(rows)
 
-cohorts = pl.concat(cohorts).sort("cohort", "entry_year", "mrun").collect()
+cohorts = pl.concat(cohorts).select("cohort", "mrun", "entry_year", pl.exclude("cohort", "mrun", "entry_year"))
+cohorts = cohorts.sort("cohort", "entry_year", "mrun").collect()
 cohorts.write_parquet(ANALYSIS / "cohorts.parquet", compression="zstd")
-pl.concat(cohort_rows).sink_parquet(ANALYSIS / "cohort_panel.parquet", compression="zstd")
 SAMPLE.mkdir(parents=True, exist_ok=True)
 pl.scan_parquet(ANALYSIS / "cohort_panel.parquet").filter(in_sample(SAMPLE_FRACTION)).sink_parquet(
     SAMPLE / "cohort_panel_sample.parquet", compression="zstd"

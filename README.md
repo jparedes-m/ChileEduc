@@ -76,15 +76,20 @@ Rows keep their original frequency: student x month in assistance, student x yea
 | `2_attendance.py` | Yearly attendance of each student from the monthly assistance data | `data/analysis/attendance/` |
 | `3_cohorts.py` | Follows the cohorts in `COHORTS` (kinder 2011-2015 to 8° básico, 1° básico 2002-2012 to 4° medio), joins the attendance, and says how each child ended | `data/analysis/cohort_panel.parquet`, `data/analysis/cohorts.parquet` |
 
-**The final data is `data/analysis/cohort_panel.parquet`**: one row per child and year of each cohort, with
+**The final data is `data/analysis/cohort_panel.parquet`**: one row per child and year, for every child in a
+cohort, with
 
-- who and when: `cohort`, `entry_year`, `year`, `mrun`, `gen_alu`, `fec_nac_alu`, `edad`, `rezago`
+- the cohorts: `cohort_kinder` (year the child was in kinder, for kinder 2011-2015 followed to 8° básico) and
+  `cohort_basica` (year the child entered 1° básico, for 2002-2012 followed to 4° medio). Each is empty when that
+  year is not part of that cohort; a child in kinder in 2011 is in both from 1° básico on
+- who and when: `year`, `mrun`, `gen_alu`, `fec_nac_alu`, `edad`, `rezago`
 - where: `grado` (0 kinder, 1-8 = 1° to 8° básico, 9-12 = 1° to 4° medio), `rbd` (or `id_estab_parv` and
   `origen` in kinder), `cod_ense`, `let_cur` (the course), `cod_tip_cur`, `cod_jor`, `cod_depe`, `rural_rbd`, `cod_com_rbd`
 - how it went: `prom_gral` (GPA, missing when 0), `asistencia` (yearly %, from performance), `sit_fin`
-  (P promoted, R failed), `int_alu`, `n_registros` (records the student had that year)
-- attendance from assistance: `asis_anual` (0 to 1), `asis_dias_asistidos`, `asis_dias_trabajados`, `asis_meses`
-  (none in 2020 and 2021)
+  (P promoted, R failed), `int_alu`, `n_registros` (records the student had in performance that year)
+- from the monthly attendance data (none in 2020 and 2021): `asis_anual` (0 to 1), `asis_dias_asistidos`,
+  `asis_dias_trabajados`, `asis_meses`, `asis_primer_mes` and `asis_ultimo_mes` (first and last month with a
+  record), `asis_n_colegios` and `asis_n_cursos` (more than 1 means the student changed school or course that year)
 
 and `data/analysis/cohorts.parquet` has one row per child and cohort: `finished` (promoted in the last grade),
 `on_time`, `left` (not finished and not seen in the last year of the data), `censored` (still in school at the

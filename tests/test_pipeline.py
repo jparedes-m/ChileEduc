@@ -77,7 +77,8 @@ def write_mapping(path):
     ws = wb.create_sheet("assistance")
     ws.append(["desired_names", "2015_03"])
     # "ANIO" is not in the file: year must come from the file name
-    for row in [["year", "ANIO"], ["month", "MES"], ["mrun", "MRUN"], ["cod_ense", "COD_ENSE"], ["fec_nac_alu", "FEC_NAC_ALU"],
+    for row in [["year", "ANIO"], ["month", "MES"], ["mrun", "MRUN"], ["rbd", "RBD"], ["cod_ense", "COD_ENSE"],
+                ["cod_grado", "COD_GRADO"], ["let_cur", "LET_CUR"], ["fec_nac_alu", "FEC_NAC_ALU"],
                 ["dias_asistidos", "DIAS_ASISTIDOS"], ["dias_trabajados", "DIAS_TRABAJADOS"]]:
         ws.append(row)
     ws = wb.create_sheet("kinder")
@@ -94,6 +95,8 @@ def project(tmp_path):
     shutil.copytree(REPO / "code", tmp_path / "code")
     master = tmp_path / "code" / "masterfile_extraction.py"
     master.write_text(master.read_text(encoding="utf-8").replace('source("extraction/1_scraping.py")', ""), encoding="utf-8")
+    analysis = tmp_path / "code" / "masterfile_analysis.py"  # let the 1° básico cohort enter in 2016, to test both cohorts
+    analysis.write_text(analysis.read_text(encoding="utf-8").replace("range(2002, 2013)", "range(2002, 2017)"), encoding="utf-8")
     (tmp_path / "config").mkdir()
     write_mapping(tmp_path / "config" / "data_mapping.xlsx")
     (tmp_path / "config" / "descriptions").mkdir()
@@ -137,13 +140,13 @@ def project(tmp_path):
     # A zip inside a zip, UTF-8 with BOM
     inner = tmp_path / "inner.zip"
     write_zip(inner, {"asistencia_marzo_2015.csv": (
-        "\ufeffAGNO;MES;MRUN;COD_ENSE;FEC_NAC_ALU;DIAS_ASISTIDOS;DIAS_TRABAJADOS\n"
-        "2015;3;1;110;20050314;18;20\n"
-        "2015;3;2;110;200506;20;20\n"
-        "2015;3;5;110;1990517;5;20\n"
-        "2015;3;6;110;Sep 16 1962;0;20\n"
-        "2015;3;8;10;201001;8;20\n"    # kinder child who changed school in March: two records...
-        "2015;3;8;10;201001;9;18\n"    # ...so 17 days attended of 20 worked
+        "\ufeffAGNO;MES;MRUN;RBD;COD_ENSE;COD_GRADO;LET_CUR;FEC_NAC_ALU;DIAS_ASISTIDOS;DIAS_TRABAJADOS\n"
+        "2015;3;1;100;110;5;A;20050314;18;20\n"
+        "2015;3;2;100;110;5;B;200506;20;20\n"
+        "2015;3;5;100;110;5;A;1990517;5;20\n"
+        "2015;3;6;100;110;5;A;Sep 16 1962;0;20\n"
+        "2015;3;8;100;10;5;A;201001;8;20\n"    # kinder child who changed school in March: two records...
+        "2015;3;8;300;10;5;A;201001;9;18\n"    # ...so 17 days attended of 20 worked, in 2 schools
     ).encode()})
     write_zip(raw / "assistance" / "assistance_2015_03.zip", {"carpeta/asistencia.zip": inner.read_bytes()})
 
@@ -168,8 +171,8 @@ def test_unification_keeps_every_record(project):
     assert perf.schema["year"] == pl.Int32 and perf.schema["sit_fin"] == pl.String
 
     asis = pl.read_parquet(project / "data" / "clean" / "assistance" / "assistance_2015_03.parquet")
-    assert asis.columns == ["year", "month", "mrun", "cod_ense", "fec_nac_alu", "dias_asistidos", "dias_trabajados",
-                            "agno"]  # AGNO is unmapped: an extra
+    assert asis.columns == ["year", "month", "mrun", "rbd", "cod_ense", "cod_grado", "let_cur", "fec_nac_alu",
+                            "dias_asistidos", "dias_trabajados", "agno"]  # AGNO is unmapped: an extra
     assert asis["fec_nac_alu"].to_list() == [200503, 200506, 199005, 196209, 201001, 201001]  # every format: AAAAMM
     assert asis["year"].to_list() == [2015] * 6
     assert asis["month"].to_list() == [3] * 6
@@ -210,14 +213,19 @@ def test_panel_selection(project):
 
 def test_cohorts(project):
     cohorts = pl.read_parquet(project / "data" / "analysis" / "cohorts.parquet")
-    kinder = cohorts.filter(pl.col("cohort") == "kinder_8basico").sort("mrun")
+    kinder = cohorts.filter(pl.col("cohort") == "cohort_kinder").sort("mrun")
     assert kinder[["mrun", "entry_year", "last_grade", "left", "censored"]].rows() == [
         (3, 2015, 0, True, False), (8, 2015, 1, False, True),
     ]
-    cohort_panel = pl.read_parquet(project / "data" / "analysis" / "cohort_panel.parquet").sort("year")
-    child = cohort_panel.filter(pl.col("mrun") == 8)
-    assert child["grado"].to_list() == [0, 1]
-    assert child[["asis_dias_asistidos", "asis_dias_trabajados", "asis_meses"]].row(0) == (17, 20, 1)
+    assert cohorts.filter(pl.col("cohort") == "cohort_basica")["mrun"].to_list() == [8]
+
+    # One row per child and year, with a column per cohort: child 8 is in both from 2016
+    final = pl.read_parquet(project / "data" / "analysis" / "cohort_panel.parquet")
+    assert final.columns[:5] == ["year", "mrun", "cohort_kinder", "cohort_basica", "grado"]
+    assert final.select("year", "mrun").is_unique().all()
+    child = final.filter(pl.col("mrun") == 8)
+    assert child[["year", "cohort_kinder", "cohort_basica", "grado"]].rows() == [(2015, 2015, None, 0), (2016, 2015, 2016, 1)]
+    assert child[["asis_dias_asistidos", "asis_dias_trabajados", "asis_meses", "asis_n_colegios"]].row(0) == (17, 20, 1, 2)
     assert child["asis_anual"].to_list() == [0.85, None]  # no attendance data for 2016
 
 

@@ -32,9 +32,9 @@ SAMPLE = DATA / "sample"      # 3_cohorts: the cohort panel for the students of 
 # [2] Settings ----
 # grado: 0 kinder, 1-8 = 1° to 8° básico, 9-12 = 1° to 4° medio. Normal age = 5 + grado.
 REZAGO_MIN, REZAGO_MAX = -1, 3  # keep students from 1 year under to 3 years over the normal age for their grade
-COHORTS = {
-    "kinder_8basico": {"start_grade": 0, "end_grade": 8, "entry_years": list(range(2011, 2016))},
-    "1basico_4medio": {"start_grade": 1, "end_grade": 12, "entry_years": list(range(2002, 2013))},
+COHORTS = {  # each one becomes a column of the final data, holding the year the child entered it
+    "cohort_kinder": {"start_grade": 0, "end_grade": 8, "entry_years": list(range(2011, 2016))},   # kinder to 8° básico
+    "cohort_basica": {"start_grade": 1, "end_grade": 12, "entry_years": list(range(2002, 2013))},  # 1° básico to 4° medio
 }
 SAMPLE_FRACTION = 0.02  # share of students in the sample of the cohort panel
 SEED = 42  # the same in masterfile_extraction.py, so both flows sample the same students
