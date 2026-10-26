@@ -36,31 +36,30 @@ The datasets include:
 
 ## Running the Pipeline
 
-Everything runs from `masterfile.py`, the only file that defines paths and settings.
+The code runs on your own computer; GitHub only keeps the versions of the code (the data never goes there).
 
 ```bash
 pip install -r requirements.txt
-export CHILEEDUC_DATA=/path/to/data   # optional, defaults to ./data
-python masterfile.py                  # scraping -> extraction -> unification -> sampling
-python masterfile.py --steps unification --datasets performance
+python masterfile.py
 ```
 
-| Step | Module | Output |
-|------|--------|--------|
-| 1. Scraping | `pipeline/scraping.py` | `raw/<dataset>/<dataset>_<year>[_<month>].zip/.rar` |
-| 2. Extraction | `pipeline/extraction.py` | `intermediate/<dataset>/*.parquet` (published columns, as text) and `docs/<dataset>/` (the PDFs and codebooks inside the archives) |
-| 3. Unification | `pipeline/unification.py` | `clean/<dataset>/*.parquet`: same columns and types every year, regular education only. Keeps the mapped columns plus any published column present in at least half the years |
-| 4. Dictionary | `pipeline/dictionary.py` | [`docs/dictionary/<dataset>.md`](docs/dictionary): every variable with its type, description, published names, years with data and coverage |
-| 5. Sampling | `pipeline/sampling.py` | `sample/<dataset>_sample.parquet`: 2% of students (0.5% in assistance) with all their rows |
+`masterfile.py` loads the libraries, sets the paths and settings, and then runs each script of `code/` with
+`source()`, like in R. To skip a step, comment out its `source()` line. Every script skips the files it already
+made, so rerunning only processes new years.
+
+| Script | What it does | Output |
+|--------|--------------|--------|
+| `0_functions.py` | Small functions used by several scripts | |
+| `1_scraping.py` | Downloads the .zip/.rar files from datosabiertos.mineduc.cl | `data/raw/<dataset>/performance_2015.zip`, `assistance_2015_03.rar`, ... |
+| `2_extraction.py` | Unpacks them and saves the data as parquet; keeps the PDFs and codebooks | `data/intermediate/<dataset>/*.parquet`, `data/docs/<dataset>/` |
+| `3_unification.py` | Same columns, names and types every year; regular education only | `data/clean/<dataset>/*.parquet` |
+| `4_dictionary.py` | Data dictionary: type, description, years and coverage of every variable | [`docs/dictionary/<dataset>.md`](docs/dictionary) |
+| `5_sampling.py` | Sample of students (2%, 0.5% in assistance) with all their rows | `data/sample/<dataset>_sample.parquet` |
 
 Rows keep their original frequency: student x month in assistance, student x year in kinder and performance.
-The sample draws students rather than rows, with the same draw in every dataset, so a student's whole trajectory
-is in the sample and the assistance sample is a subset of the performance one.
 
-Every step skips outputs that already exist, so a rerun only processes new files; `--overwrite` redoes them.
-Inputs are never overwritten. Each run writes a log to `logs/`.
-
-Unification needs `config/data_mapping.xlsx` (see `config/README.md`). RAR archives need 7-Zip or unrar installed.
+Unification needs `config/data_mapping.xlsx` (see `config/README.md`). RAR files need 7-Zip or unrar installed.
+The original scripts are kept in `vintage/`.
 
 ## Exploring the Data
 

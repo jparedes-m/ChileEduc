@@ -1,106 +1,63 @@
-"""ChileEduc masterfile.
-
-The only entry point of the project: checks the libraries, defines every path
-and setting, and runs the pipeline steps in order.
-
-    python masterfile.py                                  # every step in STEPS
-    python masterfile.py --steps extraction unification   # only some steps
-    python masterfile.py --datasets performance           # only some datasets
-    python masterfile.py --overwrite                      # redo existing outputs
-"""
+# ChileEduc masterfile
+#
+# Runs the whole project from top to bottom. Libraries and paths are defined
+# here and only here. Each script in code/ is run with source(), just like in R:
+# it sees every library, path and setting defined in this file.
+#
+# To skip a step, comment out its source() line at the bottom.
+# Every script skips the files it already made, so rerunning only does new work.
 
 # [0] Libraries ----
-import argparse
-import importlib.util
-import logging
-import os
-import sys
-import time
+import codecs
+import re
+import shutil
+import tempfile
+import unicodedata
+import zipfile
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import unquote, urljoin, urlparse
 
-REQUIRED = {  # import name: pip package
-    "polars": "polars",
-    "fastexcel": "fastexcel",
-    "requests": "requests",
-    "bs4": "beautifulsoup4",
-    "patoolib": "patool",
-}
-missing = [pkg for mod, pkg in REQUIRED.items() if importlib.util.find_spec(mod) is None]
-if missing:
-    sys.exit(f"Missing libraries. Run: pip install {' '.join(missing)}")
-
-from pipeline import dictionary, extraction, sampling, scraping, unification  # noqa: E402
+import patoolib  # .rar files; needs 7-Zip or unrar installed on the computer
+import polars as pl
+import requests
+from bs4 import BeautifulSoup
 
 # [1] Paths ----
-# The only place in the project where paths are defined. The data lives outside
-# the repo (it is far too large for git): set CHILEEDUC_DATA to its folder,
-# e.g. C:/Users/jparedesm/Dropbox/ChileEduc/data, or leave it unset to use ./data.
-ROOT = Path(__file__).resolve().parent
-DATA_DIR = Path(os.environ.get("CHILEEDUC_DATA", ROOT / "data"))
+ROOT = Path(__file__).resolve().parent  # the folder of this file (the repo)
+DATA = ROOT / "data"                    # not in git: it is far too big
 
-RAW_DIR = DATA_DIR / "raw"                     # downloaded archives
-INTERMEDIATE_DIR = DATA_DIR / "intermediate"   # one Parquet per period, columns as published
-CLEAN_DIR = DATA_DIR / "clean"                 # one Parquet per period, unified schema
-SAMPLE_DIR = DATA_DIR / "sample"               # student sample for exploration
-DOCS_DIR = DATA_DIR / "docs"                   # PDFs and codebooks shipped inside the archives
-DICTIONARY_DIR = ROOT / "docs" / "dictionary"  # generated data dictionary, kept in git
-MAPPING_FILE = ROOT / "config" / "data_mapping.xlsx"
-LOG_DIR = ROOT / "logs"
+RAW = DATA / "raw"                    # 1_scraping:    downloaded .zip/.rar files
+INTERMEDIATE = DATA / "intermediate"  # 2_extraction:  one parquet per year, columns as published
+DOCS = DATA / "docs"                  # 2_extraction:  PDFs and codebooks found inside the archives
+CLEAN = DATA / "clean"                # 3_unification: one parquet per year, same columns every year
+SAMPLE = DATA / "sample"              # 5_sampling:    a sample of students
+MAPPING = ROOT / "config" / "data_mapping.xlsx"  # column names of each year
+DICTIONARY = ROOT / "docs" / "dictionary"        # 4_dictionary: data dictionary (in git)
 
 # [2] Settings ----
-SOURCE = "https://datosabiertos.mineduc.cl"
 DATASETS = {
-    "kinder": {"url": f"{SOURCE}/matricula-educacion-parvularia/", "monthly": False},
-    "assistance": {"url": f"{SOURCE}/asistencia-declarada-mensual-2/", "monthly": True},
-    "performance": {"url": f"{SOURCE}/rendimiento-por-estudiante-2/", "monthly": False},
+    "kinder": {"url": "https://datosabiertos.mineduc.cl/matricula-educacion-parvularia/", "monthly": False},
+    "assistance": {"url": "https://datosabiertos.mineduc.cl/asistencia-declarada-mensual-2/", "monthly": True},
+    "performance": {"url": "https://datosabiertos.mineduc.cl/rendimiento-por-estudiante-2/", "monthly": False},
 }
-STEPS = ["scraping", "extraction", "unification", "dictionary", "sampling"]
-MIN_YEAR_SHARE = 0.5  # keep published columns missing from the mapping if they appear in half the years
+MIN_YEAR_SHARE = 0.5  # also keep published columns missing from the mapping if they appear in half the years
 SAMPLE_FRACTION = {"kinder": 0.02, "assistance": 0.005, "performance": 0.02}  # share of students
 SEED = 42
 
 
 # [3] Run ----
-def run_step(step: str, datasets: dict, overwrite: bool) -> None:
-    if step == "scraping":
-        scraping.run(datasets, RAW_DIR, overwrite)
-    elif step == "extraction":
-        extraction.run(datasets, RAW_DIR, INTERMEDIATE_DIR, DOCS_DIR, overwrite)
-    elif step == "unification":
-        unification.run(datasets, INTERMEDIATE_DIR, CLEAN_DIR, MAPPING_FILE, MIN_YEAR_SHARE, overwrite)
-    elif step == "dictionary":
-        dictionary.run(datasets, INTERMEDIATE_DIR, CLEAN_DIR, MAPPING_FILE, DICTIONARY_DIR)
-    elif step == "sampling":
-        sampling.run(datasets, CLEAN_DIR, SAMPLE_DIR, SAMPLE_FRACTION, SEED, overwrite)
+def source(script):
+    """Run a script of code/ as if its lines were written here, like source() in R."""
+    path = ROOT / "code" / script
+    print(f"\n===== {script} =====")
+    exec(compile(path.read_text(encoding="utf-8"), path, "exec"), globals())
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--steps", nargs="+", choices=STEPS, default=STEPS)
-    parser.add_argument("--datasets", nargs="+", choices=list(DATASETS), default=list(DATASETS))
-    parser.add_argument("--overwrite", action="store_true", help="redo outputs that already exist")
-    parser.add_argument("--verbose", action="store_true")
-    args = parser.parse_args()
-
-    LOG_DIR.mkdir(exist_ok=True)
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
-        handlers=[
-            logging.StreamHandler(),
-            logging.FileHandler(LOG_DIR / f"run_{time.strftime('%Y%m%d_%H%M%S')}.log", encoding="utf-8"),
-        ],
-    )
-    log = logging.getLogger("masterfile")
-    log.info("Data folder: %s", DATA_DIR)
-
-    datasets = {name: DATASETS[name] for name in args.datasets}
-    for step in [s for s in STEPS if s in args.steps]:
-        start = time.perf_counter()
-        log.info("== %s ==", step)
-        run_step(step, datasets, args.overwrite)
-        log.info("== %s done in %.1f min ==", step, (time.perf_counter() - start) / 60)
-
-
-if __name__ == "__main__":
-    main()
+source("0_functions.py")
+source("1_scraping.py")
+source("2_extraction.py")
+source("3_unification.py")
+source("4_dictionary.py")
+source("5_sampling.py")
