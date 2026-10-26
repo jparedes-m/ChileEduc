@@ -37,6 +37,13 @@ def test_file_name_for(original, monthly, expected):
     assert functions()["file_name_for"]("performance", original, monthly) == expected
 
 
+@pytest.mark.parametrize("path", sorted((REPO / "config" / "descriptions").glob("*.csv")), ids=lambda p: p.name)
+def test_descriptions_files_read(path):
+    df = pl.read_csv(path, infer_schema=False)
+    assert df.columns == ["variable", "description", "values", "notes"]
+    assert df["variable"].is_unique().all() and df["description"].is_not_null().all()
+
+
 def write_zip(path, members):
     with zipfile.ZipFile(path, "w") as z:
         for name, data in members.items():
