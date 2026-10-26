@@ -67,7 +67,7 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 - **month**: Desde 2013. La información es al 30 de abril de cada año, descargada en agosto (2011: noviembre).
 - **mrun**: Identificador del estudiante; el mismo que en assistance y performance.
 - **sex_stud**: 0: Sin información; 1: Hombre; 2: Mujer.
-- **birth_date_stud**: 190001: Sin información. MINEDUC la publica como AAAAMMDD en algunos años; la base limpia la deja siempre como AAAAMM.
+- **birth_date_stud**: 190001: Sin información. Publicada como AAAAMM todos los años.
 - **school_id**: Un establecimiento se identifica con school_id y origen juntos.
 - **rbd**: Desde 2014. Solo filas MINEDUC.
 - **id_estab_j**: Desde 2014. Solo filas JUNJI.

@@ -33,7 +33,7 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 | cod_des_cur | Int32 | Descripción del curso (solo media TP) | COD_DES_CUR | 2016-2023 | 35.7 | 0 to 3 |
 | mrun | Int64 | Máscara del RUN del estudiante | MRUN | 2002-2023 | 100.0 | 3 to 27620610 |
 | gen_alu | Int32 | Género del estudiante | GEN_ALU | 2002-2023 | 100.0 | 0 to 2 |
-| fec_nac_alu | Int32 | Fecha de nacimiento del estudiante (AAAAMM) | FEC_NAC_ALU | 2003-2023 | 95.3 | 19905 to 202102 |
+| fec_nac_alu | Int32 | Fecha de nacimiento del estudiante (AAAAMM) | FEC_NAC_ALU | 2002-2023 | 100.0 | 175301 to 202102 |
 | edad_alu | Int32 | Edad al 30 de junio del año escolar | EDAD_ALU | 2016-2023 | 35.7 | 0 to 97 |
 | cod_reg_alu | Int32 | Código de la región de residencia del estudiante | COD_REG_ALU | 2013-2023 | 48.8 | 0 to 16 |
 | cod_com_alu | Int32 | Código oficial (SUBDERE) de la comuna de residencia del estudiante (autodeclarado y voluntario) | COD_COM_ALU | 2002-2023 | 100.0 | 0 to 16305 |
@@ -67,7 +67,7 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 - **cod_des_cur**: 0: No aplica; 1: Sólo liceo; 2: Dual; 3: Otro.
 - **mrun**: Identificador del estudiante.
 - **gen_alu**: 0: Sin información; 1: Masculino; 2: Femenino. En 2023 MINEDUC eliminó 2 registros con género no binario para proteger su identidad.
-- **fec_nac_alu**: MINEDUC la publica como AAAAMMDD en algunos años; la base limpia la deja siempre como AAAAMM.
+- **fec_nac_alu**: En 2002 viene como texto en inglés (Sep 16 1962). La base limpia la deja siempre como AAAAMM; MINEDUC la publica como AAAAMMDD hasta 2014 y como AAAAMM desde 2015, con unas pocas filas en algunos años escritas sin el cero del mes (1990517).
 - **edad_alu**: Desde 2016, las edades no validadas con el Registro Civil (99 o más; 25 o más, o 5 o menos en básica y media niños y jóvenes) están vacías.
 - **cod_reg_alu**: 0: Sin información.
 - **cod_com_alu**: 0: Sin información.

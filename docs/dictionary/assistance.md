@@ -30,7 +30,7 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 | let_cur | String | Letra del curso | LET_CUR | 2011-2019, 2022-2023 | 100.0 |  |
 | mrun | Int64 | Identificador único del estudiante (máscara del RUN) | MRUN | 2011-2019, 2022-2023 | 100.0 | 17 to 27592487 |
 | gen_alu | Int32 | Sexo del estudiante | GEN_ALU | 2011-2019, 2022-2023 | 100.0 | 0 to 2 |
-| fec_nac_alu | Int32 | Fecha de nacimiento del estudiante (AAAAMM) | FEC_NAC_ALU | 2011-2019, 2022-2023 | 98.2 | 19905 to 202309 |
+| fec_nac_alu | Int32 | Fecha de nacimiento del estudiante (AAAAMM) | FEC_NAC_ALU | 2011-2019, 2022-2023 | 98.2 | 190000 to 202309 |
 | cod_com_alu | Int32 | Código oficial de la comuna de residencia (autodeclarado y voluntario) | COD_COM_ALU | 2011-2019, 2022-2023 | 100.0 | 0 to 16305 |
 | nom_com_alu | String | Nombre de la comuna de residencia | NOM_COM_ALU | 2011-2019, 2022-2023 | 100.0 |  |
 | dias_asistidos | Int32 | Número total de días asistidos en el mes | DIAS_ASISTIDOS | 2011-2019, 2022-2023 | 100.0 | 0 to 31 |
@@ -56,7 +56,7 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 - **let_cur**: Con rbd, cod_ense y cod_grado identifica el curso.
 - **mrun**: Un estudiante puede tener más de una fila en un mes si se cambió de colegio, de curso o de nivel.
 - **gen_alu**: 0: Sin información; 1: Hombre; 2: Mujer; 3: No binario. En diciembre de 2023 MINEDUC eliminó 2 registros con género no binario para proteger su identidad.
-- **fec_nac_alu**: 190001, 180001: Sin información. MINEDUC la publica como AAAAMMDD en algunos años; la base limpia la deja siempre como AAAAMM. Las fechas atípicas se deben a errores al ingresar el RUN en el SIGE.
+- **fec_nac_alu**: 190001, 180001: Sin información. La base limpia la deja siempre como AAAAMM; MINEDUC la publica como AAAAMMDD hasta 2014 y como AAAAMM desde 2015, con unas pocas filas en algunos años escritas sin el cero del mes (1990517). En 2018 falta en 7,1 millones de filas (20% del año). Las fechas atípicas se deben a errores al ingresar el RUN en el SIGE.
 - **cod_com_alu**: 0: Sin información (valor por defecto).
 - **dias_asistidos**: Puede ser 0 para retirados que siguen en el sistema. En 38 filas supera a dias_trabajados (errores de registro).
 - **asis_promedio**: Es una proporción, no un porcentaje. Pasa de 1 en las 38 filas donde los días asistidos superan a los trabajados: tratarlas como errores.
