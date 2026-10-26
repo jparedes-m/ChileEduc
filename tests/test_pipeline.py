@@ -59,6 +59,7 @@ PERFORMANCE_2016 = [            # performance 2015 is a Latin-1 file below; 2016
     "2016;100;110;1;A;7;198001;5,0;90;Escuela Uno;P;P",   # 36 years old in 1° básico: implausible
     "2016;100;110;1;A;8;201001;6,1;95;Escuela Uno;P;P",   # kinder in 2015, 1° básico in 2016
     "2016;100;211;1;A;9;201001;6,0;95;Escuela Uno;P;P",   # special education
+    "2016;100;211;1;A;3;201002;6,0;95;Escuela Uno;P;P",   # JUNJI kinder child of 2015, now in special education
 ]
 PERFORMANCE_COLUMNS = ["year", "rbd", "cod_ense", "cod_grado", "let_cur", "mrun", "fec_nac_alu", "prom_gral",
                        "asistencia", "nom_rbd", "sit_fin", "sit_fin_r"]
@@ -184,7 +185,7 @@ def test_unification_keeps_every_record(project):
 def test_dictionary(project):
     text = (project / "docs" / "dictionary" / "performance.md").read_text(encoding="utf-8")
     assert "| rbd | Int32 | School id \\| RBD | RBD | 2015-2016 | 100.0 | 100 to 200 |" in text
-    assert "| sit_fin | String | Final status | SIT_FIN | 2016 | 63.6 |  |" in text
+    assert "| sit_fin | String | Final status | SIT_FIN | 2016 | 66.7 |  |" in text
     assert "- **sit_fin**: P: Promoted; R: Failed." in text
     assert "| COD_MEN | 2015 | 1 | cod_men |" in text
 
@@ -214,8 +215,8 @@ def test_panel_selection(project):
 def test_cohorts(project):
     cohorts = pl.read_parquet(project / "data" / "analysis" / "cohorts.parquet")
     kinder = cohorts.filter(pl.col("cohort") == "cohort_kinder").sort("mrun")
-    assert kinder[["mrun", "entry_year", "last_grade", "left", "censored"]].rows() == [
-        (3, 2015, 0, True, False), (8, 2015, 1, False, True),
+    assert kinder[["mrun", "entry_year", "last_grade", "left", "censored", "exit_to"]].rows() == [
+        (3, 2015, 0, True, False, "special_education"), (8, 2015, 1, False, True, None),
     ]
     assert cohorts.filter(pl.col("cohort") == "cohort_basica")["mrun"].to_list() == [8]
 

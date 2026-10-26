@@ -16,11 +16,18 @@
 # How each child ends:
 #   finished  promoted in the cohort's last grade
 #   on time   ... in the year expected without repeating (entry year + last grade - first grade)
-#   left      not finished and not seen in the last year of the data: dropped out, moved to special or
-#             adult education, or left the country
+#   left      not finished and not seen in the last year of the data. exit_to says where they went, from
+#             their later records in the clean performance data:
+#               adult_education        moved to adult education (most of them)
+#               special_education      moved to special education
+#               regular_outside_panel  still in regular school, but outside the panel: too old for their
+#                                      grade (rezago over REZAGO_MAX) or only a withdrawal record
+#               not_seen_again         no later record: dropped out, left the country or died
 #   censored  not finished and still in school in the last year of the data
 
+REGULAR_ENSE = [110, 310, 410, 510, 610, 710, 810, 910]  # básica and media for children and youth
 panel = pl.scan_parquet(ANALYSIS / "panel" / "panel_*.parquet")
+performance = pl.scan_parquet(CLEAN / "performance" / "*.parquet").select("year", "mrun", "cod_ense")
 withdrawals = pl.scan_parquet(ANALYSIS / "withdrawals" / "withdrawals_*.parquet")
 attendance = pl.scan_parquet(ANALYSIS / "attendance" / "attendance_*.parquet")
 last_year = panel.select(pl.col("year").max()).collect().item()
@@ -89,6 +96,23 @@ for name, cohort in COHORTS.items():
             censored=~pl.col("finished") & (pl.col("last_year") == last_year),
         )
     )
+    later = (  # where the children who left went: their records after the last year in the cohort
+        performance.join(summary.filter("left").select("mrun", "last_year"), on="mrun")
+        .filter(pl.col("year") > pl.col("last_year"))
+        .group_by("mrun")
+        .agg(
+            regular=pl.col("cod_ense").is_in(REGULAR_ENSE).any(),
+            special=pl.col("cod_ense").is_between(200, 299).any(),
+            adult=(~pl.col("cod_ense").is_in(REGULAR_ENSE) & ~pl.col("cod_ense").is_between(200, 299)).any(),
+        )
+    )
+    summary = summary.join(later, on="mrun", how="left").with_columns(
+        exit_to=pl.when(~pl.col("left")).then(None)
+        .when(pl.col("adult")).then(pl.lit("adult_education"))
+        .when(pl.col("special")).then(pl.lit("special_education"))
+        .when(pl.col("regular")).then(pl.lit("regular_outside_panel"))
+        .otherwise(pl.lit("not_seen_again"))
+    ).drop("regular", "special", "adult")
     cohorts.append(summary)
 
 cohorts = pl.concat(cohorts).select("cohort", "mrun", "entry_year", pl.exclude("cohort", "mrun", "entry_year"))
@@ -107,6 +131,8 @@ print(
         (100 * pl.col("finished").mean()).round(1).alias("% finished"),
         (100 * pl.col("on_time").mean()).round(1).alias("% on time"),
         (100 * pl.col("left").mean()).round(1).alias("% left"),
+        (100 * (pl.col("exit_to") == "adult_education").mean()).round(1).alias("% to adults"),
+        (100 * (pl.col("exit_to") == "not_seen_again").mean()).round(1).alias("% not seen"),
         (100 * pl.col("censored").mean()).round(1).alias("% censored"),
     )
     .sort("cohort", "entry_year")

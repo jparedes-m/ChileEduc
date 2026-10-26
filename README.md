@@ -92,8 +92,9 @@ cohort, with
   record), `asis_n_colegios` and `asis_n_cursos` (more than 1 means the student changed school or course that year)
 
 and `data/analysis/cohorts.parquet` has one row per child and cohort: `finished` (promoted in the last grade),
-`on_time`, `left` (not finished and not seen in the last year of the data), `censored` (still in school at the
-end of the data), `repetitions`, `withdrawals`, `years_seen`, `last_grade`.
+`on_time`, `left` (not finished and not seen in the last year of the data), `exit_to` (where those who left
+went: `adult_education`, `special_education`, `regular_outside_panel` or `not_seen_again`), `censored` (still in
+school at the end of the data), `repetitions`, `withdrawals`, `years_seen`, `last_grade`.
 
 Unification needs `config/data_mapping.xlsx`, and the dictionary takes the variable descriptions from
 `config/descriptions/` (see `config/README.md`). The MINEDUC documentation behind them is in [`docs/mineduc/`](docs/mineduc). RAR files need 7-Zip or unrar installed.
