@@ -98,10 +98,11 @@ for dataset in DATASETS:
             found = published.get(original.strip().upper()) if original else None
             columns.append(pl.col(found).alias(name) if found else pl.lit(None, pl.String).alias(name))
         df = raw.select(columns)
-        if "year" not in df.columns:
-            df = df.with_columns(pl.lit(str(year)).alias("year"))
-        if month is not None and "month" not in df.columns:
-            df = df.with_columns(pl.lit(str(month)).alias("month"))
+        # Year (and month) from the file name wherever the data leaves them empty
+        for column, value in [("year", year), ("month", month)]:
+            if value is not None:
+                from_name = pl.lit(str(value))
+                df = df.with_columns(pl.coalesce(column, from_name).alias(column) if column in df.columns else from_name.alias(column))
 
         # Types, and a warning for values that could not be read as numbers
         types = TYPES[dataset]

@@ -8,7 +8,7 @@
 
 def years_text(years):
     """[2002, 2003, 2004, 2011] -> '2002-2004, 2011'."""
-    years, groups = sorted(years), []
+    years, groups = sorted(y for y in years if y is not None), []
     for y in years:
         if groups and y == groups[-1][1] + 1:
             groups[-1][1] = y
