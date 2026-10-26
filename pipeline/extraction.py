@@ -3,6 +3,8 @@
 Archives can be nested (zip inside rar inside zip...). Every CSV found is
 transcoded to UTF-8 if needed and written as intermediate/<dataset>/<stem>.parquet.
 All columns are kept as text here; typing happens in the unification step.
+Everything else in the archive (PDF record layouts, codebooks, frequency tables)
+is copied to docs/<dataset>/<archive name>/.
 """
 
 import codecs
@@ -95,18 +97,28 @@ def pick_data_files(csvs: list[Path], archive: Path, dataset: str, monthly: bool
     return chosen
 
 
-def extract_archive(archive: Path, dataset: str, monthly: bool, out_dir: Path, overwrite: bool) -> None:
+def save_docs(files: list[Path], tmp: Path, docs_dir: Path) -> None:
+    for f in files:
+        target = docs_dir / f.relative_to(tmp)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(f, target)
+
+
+def extract_archive(archive: Path, dataset: str, monthly: bool, out_dir: Path, docs_dir: Path, overwrite: bool) -> None:
     known = parse_period(archive.name, monthly)
     if known and not overwrite and (out_dir / f"{period_stem(dataset, *known)}.parquet").exists():
         log.debug("[%s] %s already extracted", dataset, archive.name)
         return
 
     with tempfile.TemporaryDirectory(dir=out_dir, prefix=".tmp_", ignore_cleanup_errors=True) as tmp:
-        unpack(archive, Path(tmp))
-        csvs = [p for p in Path(tmp).rglob("*") if p.is_file() and p.suffix.lower() == ".csv"]
+        tmp = Path(tmp)
+        unpack(archive, tmp)
+        contents = [p for p in tmp.rglob("*") if p.is_file()]
+        csvs = [p for p in contents if p.suffix.lower() == ".csv"]
         files = pick_data_files(csvs, archive, dataset, monthly)
         if not files:
             log.warning("[%s] no data CSV inside %s", dataset, archive.name)
+        save_docs([p for p in contents if p not in files.values()], tmp, docs_dir / dataset / archive.stem)
         for stem, csv in files.items():
             target = out_dir / f"{stem}.parquet"
             if target.exists() and not overwrite:
@@ -115,7 +127,7 @@ def extract_archive(archive: Path, dataset: str, monthly: bool, out_dir: Path, o
             log.info("[%s] %s -> %s", dataset, archive.name, target.name)
 
 
-def run(datasets: dict, raw_dir: Path, intermediate_dir: Path, overwrite: bool = False) -> None:
+def run(datasets: dict, raw_dir: Path, intermediate_dir: Path, docs_dir: Path, overwrite: bool = False) -> None:
     for dataset, cfg in datasets.items():
         out_dir = intermediate_dir / dataset
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -123,6 +135,6 @@ def run(datasets: dict, raw_dir: Path, intermediate_dir: Path, overwrite: bool =
         log.info("[%s] %d archives to process", dataset, len(archives))
         for archive in archives:
             try:
-                extract_archive(archive, dataset, cfg["monthly"], out_dir, overwrite)
+                extract_archive(archive, dataset, cfg["monthly"], out_dir, docs_dir, overwrite)
             except Exception:
                 log.exception("[%s] failed to extract %s", dataset, archive.name)

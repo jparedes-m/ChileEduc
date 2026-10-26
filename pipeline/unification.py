@@ -7,10 +7,14 @@ pl.scan_parquet("clean/<dataset>/*.parquet").
 
 The mapping file has one sheet per dataset: a "desired_names" column plus one
 column per period (2015, or 2015_03 for assistance) holding that year's original
-column name.
+column name. An optional "description" column feeds the data dictionary.
+
+Published columns the mapping does not mention are kept too, under their own
+name in lowercase, when they appear in at least min_year_share of the years.
 """
 
 import logging
+from collections import Counter
 from pathlib import Path
 
 import polars as pl
@@ -41,12 +45,39 @@ def read_mapping(mapping_file: Path, dataset: str) -> pl.DataFrame:
     return df.rename({c: str(c).strip().removesuffix(".0") for c in df.columns})
 
 
+NOT_PERIODS = ("desired_names", "description")
+
+
+def raw_coverage(src_dir: Path) -> dict[int, set[str]]:
+    """Published column names (uppercase) present each year, read from the file headers only."""
+    coverage: dict[int, set[str]] = {}
+    for f in src_dir.glob("*.parquet"):
+        year, _ = parse_stem(f.stem)
+        coverage.setdefault(year, set()).update(c.upper() for c in pl.read_parquet_schema(f))
+    return coverage
+
+
+def mapped_names(mapping: pl.DataFrame) -> dict[str, str]:
+    """Published name (uppercase) -> desired name, over every period of the mapping."""
+    names = {}
+    for period in (c for c in mapping.columns if c not in NOT_PERIODS):
+        for desired, original in mapping.select("desired_names", period).drop_nulls().iter_rows():
+            names[original.strip().upper()] = desired.strip().lower()
+    return names
+
+
+def extra_columns(mapping: pl.DataFrame, coverage: dict[int, set[str]], min_year_share: float) -> list[str]:
+    taken = set(mapped_names(mapping)) | {d.strip().upper() for d in mapping["desired_names"].drop_nulls()}
+    years = Counter(name for names in coverage.values() for name in names)
+    return sorted(n for n, k in years.items() if k >= min_year_share * len(coverage) and n not in taken)
+
+
 def period_key(year: int, month: int | None) -> str:
     return str(year) if month is None else f"{year}_{month:02d}"
 
 
-def rename_plan(mapping: pl.DataFrame, key: str, columns: list[str]) -> list[pl.Expr]:
-    """Select the desired columns in order; missing ones are filled with nulls."""
+def rename_plan(mapping: pl.DataFrame, key: str, columns: list[str], extras: list[str]) -> list[pl.Expr]:
+    """Select the desired columns in order, then the extras; missing ones are filled with nulls."""
     if key not in mapping.columns:
         raise KeyError(f"mapping has no column for period {key}")
     by_lower = {c.lower(): c for c in columns}
@@ -60,6 +91,10 @@ def rename_plan(mapping: pl.DataFrame, key: str, columns: list[str]) -> list[pl.
             source = original if original in columns else by_lower.get(original.lower())
         name = desired.strip().lower()
         exprs.append(pl.col(source).alias(name) if source else pl.lit(None, pl.String).alias(name))
+    by_upper = {c.upper(): c for c in columns}
+    for extra in extras:
+        source = by_upper.get(extra)
+        exprs.append(pl.col(source).alias(extra.lower()) if source else pl.lit(None, pl.String).alias(extra.lower()))
     return exprs
 
 
@@ -84,12 +119,12 @@ def lossy_casts(raw: pl.DataFrame, typed: pl.DataFrame, schema: dict) -> dict[st
     return counts
 
 
-def unify_file(src: Path, target: Path, dataset: str, mapping: pl.DataFrame) -> None:
+def unify_file(src: Path, target: Path, dataset: str, mapping: pl.DataFrame, extras: list[str]) -> None:
     year, month = parse_stem(src.stem)
     schema = SCHEMAS[dataset]
 
     raw = pl.read_parquet(src)
-    renamed = raw.select(rename_plan(mapping, period_key(year, month), raw.columns))
+    renamed = raw.select(rename_plan(mapping, period_key(year, month), raw.columns, extras))
     if "year" not in renamed.columns:
         renamed = renamed.with_columns(pl.lit(str(year)).alias("year"))
     if month is not None and "month" not in renamed.columns:
@@ -106,20 +141,25 @@ def unify_file(src: Path, target: Path, dataset: str, mapping: pl.DataFrame) -> 
     log.info("[%s] %s: %d rows kept of %d", dataset, target.name, clean.height, raw.height)
 
 
-def run(datasets: dict, intermediate_dir: Path, clean_dir: Path, mapping_file: Path, overwrite: bool = False) -> None:
+def run(
+    datasets: dict, intermediate_dir: Path, clean_dir: Path, mapping_file: Path, min_year_share: float, overwrite: bool = False
+) -> None:
     for dataset in datasets:
         out_dir = clean_dir / dataset
         out_dir.mkdir(parents=True, exist_ok=True)
         mapping = read_mapping(mapping_file, dataset)
-        unknown = [c.lower() for c in mapping["desired_names"].drop_nulls() if c.lower() not in SCHEMAS[dataset]]
-        if unknown:
-            log.info("[%s] kept as text (not in pipeline/schemas.py): %s", dataset, ", ".join(unknown))
+        extras = extra_columns(mapping, raw_coverage(intermediate_dir / dataset), min_year_share)
+        if extras:
+            log.info("[%s] published columns kept outside the mapping: %s", dataset, ", ".join(extras))
+        names = [c.lower() for c in mapping["desired_names"].drop_nulls()] + [e.lower() for e in extras]
+        if untyped := [c for c in names if c not in SCHEMAS[dataset]]:
+            log.info("[%s] kept as text (not in pipeline/schemas.py): %s", dataset, ", ".join(untyped))
 
         for src in sorted((intermediate_dir / dataset).glob("*.parquet")):
             target = out_dir / src.name
             if target.exists() and not overwrite:
                 continue
             try:
-                unify_file(src, target, dataset, mapping)
+                unify_file(src, target, dataset, mapping, extras)
             except Exception:
                 log.exception("[%s] failed to unify %s", dataset, src.name)

@@ -7,7 +7,7 @@ import openpyxl
 import polars as pl
 import pytest
 
-from pipeline import extraction, sampling, scraping, unification
+from pipeline import dictionary, extraction, sampling, scraping, unification
 from pipeline.common import parse_period
 
 DATASETS = {"performance": {"url": "", "monthly": False}, "assistance": {"url": "", "monthly": True}}
@@ -57,14 +57,17 @@ def project(tmp_path):
 
     # Latin-1 CSV with decimal commas and a BOM-free header, plus a frequency table to ignore.
     perf = (
-        "AGNO;RBD;COD_ENSE;COD_GRADO;LET_CUR;MRUN;PROM_GRAL;NOM_RBD\n"
-        "2015;100;110;5;A;1;6,5;Escuela Ñuñoa\n"
-        "2015;100;110;5;B;2;4,1;Escuela Ñuñoa\n"
-        "2015;100;211;5;A;3;5,0;Escuela Ñuñoa\n"  # special education, dropped
-        "2015;100;310;1;A;4;x;Escuela Ñuñoa\n"  # unreadable grade
+        "AGNO;RBD;COD_ENSE;COD_GRADO;LET_CUR;MRUN;PROM_GRAL;NOM_RBD;COD_MEN\n"  # COD_MEN is not in the mapping
+        "2015;100;110;5;A;1;6,5;Escuela Ñuñoa;1\n"
+        "2015;100;110;5;B;2;4,1;Escuela Ñuñoa;0\n"
+        "2015;100;211;5;A;3;5,0;Escuela Ñuñoa;0\n"  # special education, dropped
+        "2015;100;310;1;A;4;x;Escuela Ñuñoa;0\n"  # unreadable grade
     ).encode("latin-1")
-    write_zip(raw / "performance" / "performance_2015.zip",
-              {"Rendimiento_2015/20160101_Rendimiento_2015.csv": perf, "Frecuencia_2015.csv": b"a;b\n1;2\n"})
+    write_zip(raw / "performance" / "performance_2015.zip", {
+        "Rendimiento_2015/20160101_Rendimiento_2015.csv": perf,
+        "Rendimiento_2015/Frecuencia_2015.csv": b"a;b\n1;2\n",
+        "Rendimiento_2015/Registro_2015.pdf": b"%PDF-1.4",
+    })
 
     # A nested archive: the monthly CSV sits in a zip inside the zip, UTF-8 with BOM.
     inner = tmp_path / "inner.zip"
@@ -76,8 +79,8 @@ def project(tmp_path):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "performance"
-    ws.append(["desired_names", 2015])
-    for row in [["year", "AGNO"], ["rbd", "RBD"], ["cod_ense", "COD_ENSE"], ["cod_grado", "COD_GRADO"],
+    ws.append(["desired_names", 2015, "description"])
+    for row in [["year", "AGNO", "School year"], ["rbd", "RBD", "School id | RBD"], ["cod_ense", "COD_ENSE"], ["cod_grado", "COD_GRADO"],
                 ["let_cur", "LET_CUR"], ["mrun", "MRUN"], ["prom_gral", "PROM_GRAL"], ["nom_rbd", "nom_rbd"],
                 ["sit_fin", None]]:
         ws.append(row)
@@ -91,32 +94,42 @@ def project(tmp_path):
 
 def test_pipeline_end_to_end(project):
     root, mapping = project
-    extraction.run(DATASETS, root / "raw", root / "intermediate")
+    extraction.run(DATASETS, root / "raw", root / "intermediate", root / "docs")
     assert sorted(p.name for p in (root / "intermediate").rglob("*.parquet")) == [
         "assistance_2015_03.parquet", "performance_2015.parquet"]
+    docs = root / "docs" / "performance" / "performance_2015" / "Rendimiento_2015"
+    assert sorted(p.name for p in docs.iterdir()) == ["Frecuencia_2015.csv", "Registro_2015.pdf"]
 
-    unification.run(DATASETS, root / "intermediate", root / "clean", mapping)
+    unification.run(DATASETS, root / "intermediate", root / "clean", mapping, min_year_share=0.5)
     perf = pl.read_parquet(root / "clean" / "performance" / "performance_2015.parquet")
-    assert perf.columns == ["year", "rbd", "cod_ense", "cod_grado", "let_cur", "mrun", "prom_gral", "nom_rbd", "sit_fin"]
+    assert perf.columns == [
+        "year", "rbd", "cod_ense", "cod_grado", "let_cur", "mrun", "prom_gral", "nom_rbd", "sit_fin", "cod_men"]
+    assert perf["cod_men"].to_list() == [1, 0, 0]
     assert perf["mrun"].to_list() == [1, 2, 4]
     assert perf["prom_gral"].to_list() == [6.5, 4.1, None]
     assert perf["nom_rbd"][0] == "Escuela Ñuñoa"
     assert perf.schema["year"] == pl.Int32 and perf.schema["sit_fin"] == pl.String
 
     asis = pl.read_parquet(root / "clean" / "assistance" / "assistance_2015_03.parquet")
-    assert asis.columns == ["mrun", "cod_ense", "dias_asistidos", "year", "month"]
+    # AGNO and MES are not in the assistance mapping, so they are kept as extras next to year and month.
+    assert asis.columns == ["mrun", "cod_ense", "dias_asistidos", "agno", "mes", "year", "month"]
     assert asis["month"].to_list() == [3, 3]
 
-    sampling.run(DATASETS, root / "clean", root / "sample", fraction=1.0, seed=42)
+    dictionary.run(DATASETS, root / "intermediate", root / "clean", mapping, root / "dictionary")
+    text = (root / "dictionary" / "performance.md").read_text()
+    assert "| rbd | Int32 | School id \\| RBD | RBD | 2015 | 100.0 | 100 to 100 |" in text
+    assert "| COD_MEN | 2015 | 1 | cod_men |" in text
+
+    sampling.run(DATASETS, root / "clean", root / "sample", {"performance": 1.0, "assistance": 1.0}, seed=42)
     assert pl.read_parquet(root / "sample" / "performance_sample.parquet").height == 3
 
 
 def test_rerun_skips_existing(project, caplog):
     root, mapping = project
-    extraction.run(DATASETS, root / "raw", root / "intermediate")
+    extraction.run(DATASETS, root / "raw", root / "intermediate", root / "docs")
     target = root / "intermediate" / "performance" / "performance_2015.parquet"
     before = target.stat().st_mtime_ns
-    extraction.run(DATASETS, root / "raw", root / "intermediate")
+    extraction.run(DATASETS, root / "raw", root / "intermediate", root / "docs")
     assert target.stat().st_mtime_ns == before
 
 
@@ -127,3 +140,5 @@ def test_sample_is_by_student_and_stable():
     assert 1_800 < students.len() < 2_200
     assert picked.height == 2 * students.len()  # every row of a sampled student is kept
     assert picked.equals(df.filter(sampling.in_sample(0.02, 42)))
+    smaller = df.filter(sampling.in_sample(0.005, 42))["mrun"].unique()
+    assert set(smaller) <= set(students)  # the 0.5% sample is inside the 2% one

@@ -1,8 +1,10 @@
-"""Step 4: draw a reproducible sample of students for quick exploration.
+"""Step 5: draw a reproducible sample of students for quick exploration.
 
-The sample is drawn by student (mrun), not by row, using the same rule in every
-dataset: a sampled student keeps all their years and months in kinder,
-assistance and performance, so cohorts can be followed inside the sample.
+Rows keep their original frequency (student x month in assistance, student x
+year elsewhere). The draw is by student (mrun), not by row: a sampled student
+keeps all their rows. Every dataset uses the same draw, so a smaller sample is
+a subset of a larger one: the 0.5% of students sampled in assistance are also
+in the 2% samples of kinder and performance.
 """
 
 import logging
@@ -21,7 +23,7 @@ def in_sample(fraction: float, seed: int) -> pl.Expr:
     return h < int(fraction * (1 << 32))
 
 
-def run(datasets: dict, clean_dir: Path, sample_dir: Path, fraction: float, seed: int, overwrite: bool = False) -> None:
+def run(datasets: dict, clean_dir: Path, sample_dir: Path, fractions: dict, seed: int, overwrite: bool = False) -> None:
     sample_dir.mkdir(parents=True, exist_ok=True)
     for dataset in datasets:
         files = sorted((clean_dir / dataset).glob("*.parquet"))
@@ -33,7 +35,7 @@ def run(datasets: dict, clean_dir: Path, sample_dir: Path, fraction: float, seed
             log.info("[%s] %s already exists", dataset, target.name)
             continue
         partial = target.with_name(target.name + ".part")
-        pl.scan_parquet(files).filter(in_sample(fraction, seed)).sink_parquet(partial, compression="zstd")
+        pl.scan_parquet(files).filter(in_sample(fractions[dataset], seed)).sink_parquet(partial, compression="zstd")
         partial.replace(target)
         rows = pl.scan_parquet(target).select(pl.len()).collect().item()
         log.info("[%s] %s: %d rows", dataset, target.name, rows)

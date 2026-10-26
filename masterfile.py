@@ -29,7 +29,7 @@ missing = [pkg for mod, pkg in REQUIRED.items() if importlib.util.find_spec(mod)
 if missing:
     sys.exit(f"Missing libraries. Run: pip install {' '.join(missing)}")
 
-from pipeline import extraction, sampling, scraping, unification  # noqa: E402
+from pipeline import dictionary, extraction, sampling, scraping, unification  # noqa: E402
 
 # [1] Paths ----
 # The only place in the project where paths are defined. The data lives outside
@@ -42,6 +42,8 @@ RAW_DIR = DATA_DIR / "raw"                     # downloaded archives
 INTERMEDIATE_DIR = DATA_DIR / "intermediate"   # one Parquet per period, columns as published
 CLEAN_DIR = DATA_DIR / "clean"                 # one Parquet per period, unified schema
 SAMPLE_DIR = DATA_DIR / "sample"               # student sample for exploration
+DOCS_DIR = DATA_DIR / "docs"                   # PDFs and codebooks shipped inside the archives
+DICTIONARY_DIR = ROOT / "docs" / "dictionary"  # generated data dictionary, kept in git
 MAPPING_FILE = ROOT / "config" / "data_mapping.xlsx"
 LOG_DIR = ROOT / "logs"
 
@@ -52,8 +54,9 @@ DATASETS = {
     "assistance": {"url": f"{SOURCE}/asistencia-declarada-mensual-2/", "monthly": True},
     "performance": {"url": f"{SOURCE}/rendimiento-por-estudiante-2/", "monthly": False},
 }
-STEPS = ["scraping", "extraction", "unification", "sampling"]
-SAMPLE_FRACTION = 0.02  # share of students, the same students in every dataset
+STEPS = ["scraping", "extraction", "unification", "dictionary", "sampling"]
+MIN_YEAR_SHARE = 0.5  # keep published columns missing from the mapping if they appear in half the years
+SAMPLE_FRACTION = {"kinder": 0.02, "assistance": 0.005, "performance": 0.02}  # share of students
 SEED = 42
 
 
@@ -62,9 +65,11 @@ def run_step(step: str, datasets: dict, overwrite: bool) -> None:
     if step == "scraping":
         scraping.run(datasets, RAW_DIR, overwrite)
     elif step == "extraction":
-        extraction.run(datasets, RAW_DIR, INTERMEDIATE_DIR, overwrite)
+        extraction.run(datasets, RAW_DIR, INTERMEDIATE_DIR, DOCS_DIR, overwrite)
     elif step == "unification":
-        unification.run(datasets, INTERMEDIATE_DIR, CLEAN_DIR, MAPPING_FILE, overwrite)
+        unification.run(datasets, INTERMEDIATE_DIR, CLEAN_DIR, MAPPING_FILE, MIN_YEAR_SHARE, overwrite)
+    elif step == "dictionary":
+        dictionary.run(datasets, INTERMEDIATE_DIR, CLEAN_DIR, MAPPING_FILE, DICTIONARY_DIR)
     elif step == "sampling":
         sampling.run(datasets, CLEAN_DIR, SAMPLE_DIR, SAMPLE_FRACTION, SEED, overwrite)
 

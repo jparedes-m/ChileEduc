@@ -48,9 +48,14 @@ python masterfile.py --steps unification --datasets performance
 | Step | Module | Output |
 |------|--------|--------|
 | 1. Scraping | `pipeline/scraping.py` | `raw/<dataset>/<dataset>_<year>[_<month>].zip/.rar` |
-| 2. Extraction | `pipeline/extraction.py` | `intermediate/<dataset>/*.parquet` (published columns, as text) |
-| 3. Unification | `pipeline/unification.py` | `clean/<dataset>/*.parquet` (same columns and types every year, regular education only) |
-| 4. Sampling | `pipeline/sampling.py` | `sample/<dataset>_sample.parquet` (2% of students, the same students in every dataset) |
+| 2. Extraction | `pipeline/extraction.py` | `intermediate/<dataset>/*.parquet` (published columns, as text) and `docs/<dataset>/` (the PDFs and codebooks inside the archives) |
+| 3. Unification | `pipeline/unification.py` | `clean/<dataset>/*.parquet`: same columns and types every year, regular education only. Keeps the mapped columns plus any published column present in at least half the years |
+| 4. Dictionary | `pipeline/dictionary.py` | [`docs/dictionary/<dataset>.md`](docs/dictionary): every variable with its type, description, published names, years with data and coverage |
+| 5. Sampling | `pipeline/sampling.py` | `sample/<dataset>_sample.parquet`: 2% of students (0.5% in assistance) with all their rows |
+
+Rows keep their original frequency: student x month in assistance, student x year in kinder and performance.
+The sample draws students rather than rows, with the same draw in every dataset, so a student's whole trajectory
+is in the sample and the assistance sample is a subset of the performance one.
 
 Every step skips outputs that already exist, so a rerun only processes new files; `--overwrite` redoes them.
 Inputs are never overwritten. Each run writes a log to `logs/`.
