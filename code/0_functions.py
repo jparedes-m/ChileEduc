@@ -44,3 +44,5 @@ def read_mapping(dataset):
 
 def year_columns(mapping):
     return [c for c in mapping.columns if c not in ("desired_names", "description")]
+
+# [End-of-file] ----

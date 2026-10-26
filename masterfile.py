@@ -12,6 +12,7 @@ import codecs
 import re
 import shutil
 import tempfile
+import time
 import unicodedata
 import zipfile
 from collections import Counter
@@ -49,10 +50,14 @@ SEED = 42
 
 # [3] Run ----
 def source(script):
-    """Run a script of code/ as if its lines were written here, like source() in R."""
+    """Run a script of code/ as if its lines were written here, like source() in R, and time it."""
     path = ROOT / "code" / script
-    print(f"\n===== {script} =====")
+    print(f"\nScript: {script} ...")
+    start = time.time()
     exec(compile(path.read_text(encoding="utf-8"), path, "exec"), globals())
+    minutes, seconds = divmod(round(time.time() - start), 60)
+    hours, minutes = divmod(minutes, 60)
+    print(f"Done in {hours}h {minutes}min {seconds}s")
 
 
 source("0_functions.py")
@@ -61,3 +66,5 @@ source("2_extraction.py")
 source("3_unification.py")
 source("4_dictionary.py")
 source("5_sampling.py")
+
+# [End-of-file] ----

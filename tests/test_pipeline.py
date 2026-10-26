@@ -90,7 +90,7 @@ def project(tmp_path):
 
     # A zip inside a zip, UTF-8 with BOM
     inner = tmp_path / "inner.zip"
-    write_zip(inner, {"asistencia_marzo_2015.csv": "﻿AGNO;MES;MRUN;COD_ENSE\n2015;3;1;110\n2015;3;2;110\n".encode()})
+    write_zip(inner, {"asistencia_marzo_2015.csv": "\ufeffAGNO;MES;MRUN;COD_ENSE\n2015;3;1;110\n2015;3;2;110\n".encode()})
     write_zip(raw / "assistance" / "assistance_2015_03.zip", {"carpeta/asistencia.zip": inner.read_bytes()})
 
     result = subprocess.run([sys.executable, "masterfile.py"], cwd=tmp_path, capture_output=True, text=True)
@@ -145,3 +145,5 @@ def test_sample_is_by_student():
     assert 1_800 < len(students) < 2_200
     assert picked.height == 2 * len(students)  # all rows of a sampled student
     assert set(df.filter(number < 0.005)["mrun"]) <= students  # smaller samples are inside bigger ones
+
+# [End-of-file] ----

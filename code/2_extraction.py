@@ -75,8 +75,10 @@ for dataset in DATASETS:
             partial = target.with_name(target.name + ".part")
             (
                 pl.scan_csv(data, separator=separator, infer_schema=False)
-                .rename(lambda c: c.lstrip("﻿").strip())  # drop the invisible BOM some headers carry
+                .rename(lambda c: c.lstrip("\ufeff").strip())  # drop the invisible BOM some headers carry
                 .sink_parquet(partial, compression="zstd")
             )
             partial.replace(target)
             print(f"  {archive.name} -> {target.name}")
+
+# [End-of-file] ----

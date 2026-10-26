@@ -105,3 +105,5 @@ for dataset in DATASETS:
     ]
     (DICTIONARY / f"{dataset}.md").write_text("\n".join(lines), encoding="utf-8")
     print(f"{dataset}: docs/dictionary/{dataset}.md written")
+
+# [End-of-file] ----

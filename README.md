@@ -10,6 +10,10 @@ The datasets include:
 2. **Assistance**: Monthly attendance data for students in schools.
 3. **Performance**: Annual academic performance data of students.
 
+## To-Do List
+- [x] Master file for data conformation, where it does not repeat every time the working directory.
+- [ ] We need to map geographically the best bus routes from kids house to school with their frequencies.
+
 ## Dataset Details
 
 ### 1. Kinder
@@ -85,7 +89,3 @@ duckdb.sql("""
 ```
 
 The datasets themselves are **not uploaded** due to their **large size**.
-
-## To-Do List
-- [x] Master file for data conformation, where it does not repeat every time the working directory.
-- [ ] We need to map geographically the best bus routes from kids house to school with their frequencies.

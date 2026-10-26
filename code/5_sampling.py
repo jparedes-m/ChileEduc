@@ -22,3 +22,5 @@ for dataset in DATASETS:
     partial.replace(target)
     rows = pl.scan_parquet(target).select(pl.len()).collect().item()
     print(f"{dataset}: {rows:,} rows in the sample")
+
+# [End-of-file] ----

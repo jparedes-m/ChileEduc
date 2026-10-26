@@ -124,3 +124,5 @@ for dataset in DATASETS:
         clean.write_parquet(partial, compression="zstd")
         partial.replace(target)
         print(f"  {f.stem}: {clean.height:,} rows kept of {raw.height:,}")
+
+# [End-of-file] ----

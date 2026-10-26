@@ -42,3 +42,5 @@ for dataset, info in DATASETS.items():
     print(f"{dataset}: {len(links)} files on the page, {len(to_download)} new")
     with ThreadPoolExecutor(max_workers=4) as pool:
         list(pool.map(download, to_download.keys(), to_download.values()))
+
+# [End-of-file] ----
