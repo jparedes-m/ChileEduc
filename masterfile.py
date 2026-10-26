@@ -9,6 +9,7 @@
 
 # [0] Libraries ----
 import codecs
+import logging
 import re
 import shutil
 import tempfile
@@ -24,6 +25,8 @@ import patoolib  # .rar files; needs 7-Zip or unrar installed on the computer
 import polars as pl
 import requests
 from bs4 import BeautifulSoup
+
+logging.getLogger("patool").setLevel(logging.WARNING)  # hide patool's routine notes, keep its warnings
 
 # [1] Paths ----
 ROOT = Path(__file__).resolve().parent  # the folder of this file (the repo)
