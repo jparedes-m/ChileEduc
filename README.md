@@ -10,9 +10,53 @@ The datasets include:
 2. **Assistance**: Monthly attendance data for students in schools.
 3. **Performance**: Annual academic performance data of students.
 
-## To-Do List
+## Research Question
+
+Do schools that sort students into courses by their grades (tracking) change how those students do? Chilean
+schools with two or more courses per grade can put the students with the best GPA together. The study finds
+the schools and years that do it, the GPA threshold that separates their courses, and compares the students
+just below it (sent to the lower course) with those just above it (sent to the higher course): a regression
+discontinuity. Both groups are followed in the next years: GPA, attendance, repetition, course and school
+changes, finishing school, and moving to adult education.
+
+### Design
+
+1. **The children**: two cohorts, followed with `mrun` across the three datasets: kinder 2011-2015 up to
+   8° básico, and 1° básico 2002-2012 up to 4° medio. Regular education for children and youth only, without
+   withdrawn students (`code/analysis/1_selection.py` to `3_cohorts.py`).
+2. **Which schools track**: in each school, teaching code, grade, shift and year with 2+ courses, how much of
+   the spread of last year's GPA is between courses (`eta2`), against random reassignments of the same
+   students (`p_value`). Only courses of the same shift and teaching code are compared, so they are alike
+   (`4_tracking.py`).
+3. **Telling sorting from inertia**: courses often move up a grade together, and then their GPAs differ
+   because they had different teachers, not because the school sorted them. `persistence` says how many
+   students stayed with their classmates; the sorting that matters is in the groups that were remixed
+   (`reshuffled`).
+4. **The threshold**: for each pair of courses next to each other in a tracked group, the prior GPA that best
+   splits them, and how sharp it is (`sharpness`, the share of students on the right side of it).
+5. **Just below and just above**: the students within `RD_BANDWIDTH` GPA points of a sharp threshold, with
+   their outcomes that year and one and two years later, and how they finished school (`5_rd_sample.py`).
+
+### Things to keep in mind
+
+- **GPA is set by each teacher**, so a course with a harsher teacher has lower GPAs. GPA works as the running
+  variable (it is what schools sort on), but as an outcome it mixes the student and the teacher. A standardized
+  test (SIMCE, requested to the Agencia de Calidad de la Educación) would be a cleaner outcome.
+- **Thresholds are estimated**, so students close to them should be compared within the same group (group
+  fixed effects) and the results checked with other bandwidths and sharpness levels.
+- **Prior GPA 0 means withdrawn**, and is treated as missing. **2020 and 2021** have no attendance data and
+  lenient promotion rules.
+
+### Progress
+
 - [x] Master file for data conformation, where it does not repeat every time the working directory.
-- [ ] We need to map geographically the best bus routes from kids house to school with their frequencies.
+- [x] The three MINEDUC datasets, clean, documented and with a data dictionary (flow 1).
+- [x] Cohorts from kinder and from 1° básico, with how each child ended, including the move to adult education.
+- [x] Which school-grade-years track, the GPA thresholds, and the students just below and above them.
+- [ ] Run tracking on the full data and look at how common it is, by grade, year and type of school.
+- [ ] Regression discontinuity estimates, with group fixed effects and several bandwidths.
+- [ ] Request student-level SIMCE scores, as an outcome not set by teachers.
+- [ ] Map geographically the best bus routes from kids' houses to school, with their frequencies.
 
 ## Dataset Details
 
@@ -75,6 +119,11 @@ Rows keep their original frequency: student x month in assistance, student x yea
 | `1_selection.py` | One row per student and year, kinder (NT2) to 4° medio of regular education for children and youth. Drops special and adult education, the records of withdrawn or transferred-out students (kept in a withdrawals table) and implausible ages; adds age and rezago | `data/analysis/panel/`, `data/analysis/withdrawals/` |
 | `2_attendance.py` | Yearly attendance of each student from the monthly assistance data | `data/analysis/attendance/` |
 | `3_cohorts.py` | Follows the cohorts in `COHORTS` (kinder 2011-2015 to 8° básico, 1° básico 2002-2012 to 4° medio), joins the attendance, and says how each child ended | `data/analysis/cohort_panel.parquet`, `data/analysis/cohorts.parquet` |
+| `4_tracking.py` | Which school-grade-shift-years sort students into courses by last year's GPA, whether their courses were remixed, and the GPA threshold between each pair of courses | `data/analysis/tracking/groups_<year>`, `courses_<year>`, `thresholds_<year>` |
+| `5_rd_sample.py` | The students within `RD_BANDWIDTH` of a sharp threshold, with their outcomes that year, one and two years later, and at the end of school | `data/analysis/rd_sample.parquet` |
+
+The tracking settings (course size, permutations, significance, bandwidth, sharpness) are in
+`code/masterfile_analysis.py`. Set `TRACKING_SCHOOL_FRACTION = 0.05` to try it fast on 5% of the schools.
 
 **The final data is `data/analysis/cohort_panel.parquet`**: one row per child and year, for every child in a
 cohort, with
@@ -95,6 +144,13 @@ and `data/analysis/cohorts.parquet` has one row per child and cohort: `finished`
 `on_time`, `left` (not finished and not seen in the last year of the data), `exit_to` (where those who left
 went: `adult_education`, `special_education`, `regular_outside_panel` or `not_seen_again`), `censored` (still in
 school at the end of the data), `repetitions`, `withdrawals`, `years_seen`, `last_grade`.
+
+`data/analysis/rd_sample.parquet` has one row per student and threshold: `distance` (prior GPA minus the
+threshold), `above`, `in_high` (in the higher course), `threshold`, `sharpness`, the group's `eta2`, `p_value`,
+`persistence` and `reshuffled`, `group` and `low_rank` (to compare within a group), own and other course size
+and mean prior GPA, the student's `gen_alu`, `edad`, `rezago`, `repeater`, and their outcomes: `prom_gral`,
+`asistencia`, `sit_fin` and `asis_anual` that year; the same plus `grado`, `same_school` and `course_rank` one
+and two years later (`_t1`, `_t2`); and `finished`, `on_time` and `exit_to` for the cohort of 1° básico.
 
 Unification needs `config/data_mapping.xlsx`, and the dictionary takes the variable descriptions from
 `config/descriptions/` (see `config/README.md`). The MINEDUC documentation behind them is in [`docs/mineduc/`](docs/mineduc). RAR files need 7-Zip or unrar installed.

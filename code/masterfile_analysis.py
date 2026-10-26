@@ -6,6 +6,9 @@
 # and youth, with their grade, school, course, GPA, final status and yearly attendance, and
 # the cohorts followed through it.
 #
+# Then it finds the school-grade-years that sort students into courses by GPA, the GPA threshold
+# between courses, and the students just below and just above it (a regression discontinuity).
+#
 # Libraries and paths are defined here and only here. Each script in code/analysis/ is run
 # with source(), just like in R: it sees every library, path and setting defined in this file.
 #
@@ -26,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[1]  # the repo (this file is in code/)
 DATA = ROOT / "data"                        # not in git: it is far too big
 
 CLEAN = DATA / "clean"        # input: the clean data of flow 1
-ANALYSIS = DATA / "analysis"  # 1_selection, 2_attendance, 3_cohorts: the data of the study
+ANALYSIS = DATA / "analysis"  # 1_selection to 5_rd_sample: the data of the study
 SAMPLE = DATA / "sample"      # 3_cohorts: the cohort panel for the students of the sample
 
 # [2] Settings ----
@@ -36,6 +39,15 @@ COHORTS = {  # each one becomes a column of the final data, holding the year the
     "cohort_kinder": {"start_grade": 0, "end_grade": 8, "entry_years": list(range(2011, 2016))},   # kinder to 8° básico
     "cohort_basica": {"start_grade": 1, "end_grade": 12, "entry_years": list(range(2002, 2013))},  # 1° básico to 4° medio
 }
+# Tracking (4_tracking) and the regression discontinuity sample (5_rd_sample)
+TRACKING_MIN_COURSE_SIZE = 10   # students with a prior GPA a course needs to be compared
+TRACKING_PERMUTATIONS = 100     # random reassignments to test sorting against
+TRACKING_ALPHA = 0.05           # a group is tracked if sorting is this unlikely under random assignment
+RESHUFFLE_MAX = 0.8             # a group was remixed if less than this share stayed with most of their course
+TRACKING_SCHOOL_FRACTION = 1.0  # share of schools to run tracking on: 0.05 to try it fast, 1.0 for everything
+RD_MIN_SHARPNESS = 0.85         # thresholds that put at least this share of the pair on the right side
+RD_BANDWIDTH = 0.3              # GPA points around the threshold to compare students just below and above
+
 SAMPLE_FRACTION = 0.02  # share of students in the sample of the cohort panel
 SEED = 42  # the same in masterfile_extraction.py, so both flows sample the same students
 
@@ -56,5 +68,7 @@ source("extraction/0_functions.py")  # period_of() and in_sample(), shared with 
 source("analysis/1_selection.py")
 source("analysis/2_attendance.py")
 source("analysis/3_cohorts.py")
+source("analysis/4_tracking.py")
+source("analysis/5_rd_sample.py")
 
 # [End-of-file] ----

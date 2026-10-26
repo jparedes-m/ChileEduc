@@ -247,4 +247,68 @@ def test_sample_is_by_student():
     assert picked.height == 2 * len(students)  # all rows of a sampled student
     assert set(df.filter(number < 0.005)["mrun"]) <= students  # smaller samples are inside bigger ones
 
+
+PANEL_TYPES = {"year": pl.Int32, "mrun": pl.Int64, "grado": pl.Int32, "rbd": pl.Int32, "cod_ense": pl.Int32,
+               "let_cur": pl.String, "cod_tip_cur": pl.Int32, "cod_jor": pl.Int32, "gen_alu": pl.Int32, "edad": pl.Int32,
+               "rezago": pl.Int32, "prom_gral": pl.Float64, "asistencia": pl.Int32, "sit_fin": pl.String}
+
+
+@pytest.fixture
+def tracking_project(tmp_path):
+    """Two schools with 40 students in 5° básico in 2016. School 500 remixes its courses and puts the 20 with the
+    best GPA of 2015 in course A and the rest in B; school 600 keeps the courses of 4°, which ignore GPA."""
+    shutil.copytree(REPO / "code", tmp_path / "code")
+    master = tmp_path / "code" / "masterfile_analysis.py"
+    text = master.read_text(encoding="utf-8")
+    for step in ("1_selection", "2_attendance", "3_cohorts"):  # their outputs are written below
+        text = text.replace(f'source("analysis/{step}.py")', "")
+    master.write_text(text, encoding="utf-8")
+
+    rows = []
+    for school in (500, 600):
+        for i in range(40):
+            mrun, prior = school * 100 + i, 4.0 + i / 20  # GPAs 4.00 to 5.95; the threshold is 5.00
+            high = i >= 20 if school == 500 else i % 2 == 0
+            for year, grado, course, gpa in [(2015, 4, "AB"[i % 2], prior), (2016, 5, "A" if high else "B", prior + 0.2),
+                                             (2017, 6, "A" if high else "B", prior + 0.1)]:
+                rows.append({"year": year, "mrun": mrun, "grado": grado, "rbd": school, "cod_ense": 110, "let_cur": course,
+                             "cod_tip_cur": 0, "cod_jor": 1, "gen_alu": 1 + i % 2, "edad": 5 + grado, "rezago": 0,
+                             "prom_gral": gpa, "asistencia": 90, "sit_fin": "P"})
+    analysis = tmp_path / "data" / "analysis"
+    panel = pl.DataFrame(rows, schema=PANEL_TYPES)
+    for year in (2015, 2016, 2017):
+        (analysis / "panel").mkdir(parents=True, exist_ok=True)
+        panel.filter(pl.col("year") == year).write_parquet(analysis / "panel" / f"panel_{year}.parquet")
+    (analysis / "attendance").mkdir()
+    panel.filter(pl.col("year") == 2016).select("year", "mrun", asis_anual=pl.lit(0.9)).write_parquet(
+        analysis / "attendance" / "attendance_2016.parquet")
+    panel.select("mrun").unique().with_columns(
+        cohort=pl.lit("cohort_basica"), finished=pl.lit(True), on_time=pl.lit(True), exit_to=pl.lit(None, pl.String)
+    ).write_parquet(analysis / "cohorts.parquet")
+
+    result = subprocess.run([sys.executable, "code/masterfile_analysis.py"], cwd=tmp_path, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    return analysis
+
+
+def test_tracking_finds_the_sorting_school(tracking_project):
+    groups = pl.read_parquet(tracking_project / "tracking" / "groups_2016.parquet").sort("rbd")
+    assert groups[["rbd", "courses", "students", "tracked", "reshuffled"]].rows() == [
+        (500, 2, 40, True, True), (600, 2, 40, False, False),
+    ]
+    assert groups["persistence"].to_list() == [0.5, 1.0]  # 500 remixed its courses, 600 kept them as they were
+    thresholds = pl.read_parquet(tracking_project / "tracking" / "thresholds_2016.parquet")
+    assert thresholds[["rbd", "low_rank", "threshold", "sharpness"]].rows() == [(500, 1, 5.0, 1.0)]
+
+
+def test_rd_sample_compares_just_below_and_above(tracking_project):
+    rd = pl.read_parquet(tracking_project / "rd_sample.parquet")
+    assert set(rd["rbd"]) == {500}
+    assert (rd["above"] == rd["in_high"]).all()  # a sharp threshold: above it, in the higher course
+    assert rd["distance"].abs().max() <= 0.3 and rd["distance"].min() < 0 <= rd["distance"].max()
+    assert rd.filter(pl.col("distance") == 0)[["prior", "prom_gral", "prom_gral_t1", "course_rank_t1", "asis_anual"]].row(0) == (
+        5.0, 5.2, 5.1, 2, 0.9)
+    assert rd["finished"].all()
+
+
 # [End-of-file] ----
