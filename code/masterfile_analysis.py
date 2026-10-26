@@ -7,7 +7,8 @@
 # the cohorts followed through it.
 #
 # Then it finds the school-grade-years that sort students into courses by GPA, the GPA threshold
-# between courses, and the students just below and just above it (a regression discontinuity).
+# between courses, and the students just below and just above it, and estimates the effect of
+# being sent to the higher course (a regression discontinuity).
 #
 # Libraries and paths are defined here and only here. Each script in code/analysis/ is run
 # with source(), just like in R: it sees every library, path and setting defined in this file.
@@ -22,7 +23,12 @@ import re
 import time
 from pathlib import Path
 
+import matplotlib
 import polars as pl
+import pyfixest as pf  # regressions with fixed effects, instrumental variables and clustered errors
+
+matplotlib.use("Agg")  # draw plots to files, without opening windows
+import matplotlib.pyplot as plt  # noqa: E402
 
 # [1] Paths ----
 ROOT = Path(__file__).resolve().parents[1]  # the repo (this file is in code/)
@@ -31,6 +37,7 @@ DATA = ROOT / "data"                        # not in git: it is far too big
 CLEAN = DATA / "clean"        # input: the clean data of flow 1
 ANALYSIS = DATA / "analysis"  # 1_selection to 5_rd_sample: the data of the study
 SAMPLE = DATA / "sample"      # 3_cohorts: the cohort panel for the students of the sample
+RESULTS = ROOT / "results"    # 6_rd_estimates: tables and plots (in git: they are small summaries)
 
 # [2] Settings ----
 # grado: 0 kinder, 1-8 = 1° to 8° básico, 9-12 = 1° to 4° medio. Normal age = 5 + grado.
@@ -46,7 +53,9 @@ TRACKING_ALPHA = 0.05           # a group is tracked if sorting is this unlikely
 RESHUFFLE_MAX = 0.8             # a group was remixed if less than this share stayed with most of their course
 TRACKING_SCHOOL_FRACTION = 1.0  # share of schools to run tracking on: 0.05 to try it fast, 1.0 for everything
 RD_MIN_SHARPNESS = 0.85         # thresholds that put at least this share of the pair on the right side
-RD_BANDWIDTH = 0.3              # GPA points around the threshold to compare students just below and above
+RD_BANDWIDTH = 0.5              # GPA points around the threshold kept in the sample of students just below and above
+RD_ESTIMATE_BANDWIDTHS = [0.2, 0.3, 0.5]  # bandwidths to estimate with (GPAs have 1 decimal, so 0.1 is too narrow)
+RD_MAIN_BANDWIDTH = 0.3         # the one printed in the main table
 
 SAMPLE_FRACTION = 0.02  # share of students in the sample of the cohort panel
 SEED = 42  # the same in masterfile_extraction.py, so both flows sample the same students
@@ -70,5 +79,6 @@ source("analysis/2_attendance.py")
 source("analysis/3_cohorts.py")
 source("analysis/4_tracking.py")
 source("analysis/5_rd_sample.py")
+source("analysis/6_rd_estimates.py")
 
 # [End-of-file] ----

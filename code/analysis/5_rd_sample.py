@@ -65,7 +65,7 @@ for year in sorted(panel_files):
     sample = (
         students.join(thresholds.select("group", "low_rank", "threshold", "sharpness"), on="group")
         .filter((pl.col("course_rank") == pl.col("low_rank")) | (pl.col("course_rank") == pl.col("low_rank") + 1))
-        .with_columns(distance=pl.col("prior") - pl.col("threshold"))
+        .with_columns(distance=(pl.col("prior") - pl.col("threshold")).round(4))  # GPAs have 1 decimal: 0.3, not 0.30000001
         .filter(pl.col("distance").abs() <= RD_BANDWIDTH)
         .with_columns(
             above=pl.col("distance") >= 0,

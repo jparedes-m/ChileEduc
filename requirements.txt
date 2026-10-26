@@ -5,5 +5,7 @@ beautifulsoup4>=4.12
 patool>=2.0          # .rar archives; also needs 7-Zip or unrar installed on the system
 duckdb>=1.1          # optional: SQL over the Parquet files
 pyarrow>=15          # lets DuckDB hand results to polars (.pl())
+pyfixest>=0.30       # regression discontinuity estimates (analysis/6_rd_estimates.py)
+matplotlib>=3.8      # plots
 pytest>=8            # tests
 # selenium>=4        # only if the MINEDUC pages stop listing their files in plain HTML

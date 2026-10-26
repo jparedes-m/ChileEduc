@@ -36,6 +36,10 @@ changes, finishing school, and moving to adult education.
    splits them, and how sharp it is (`sharpness`, the share of students on the right side of it).
 5. **Just below and just above**: the students within `RD_BANDWIDTH` GPA points of a sharp threshold, with
    their outcomes that year and one and two years later, and how they finished school (`5_rd_sample.py`).
+6. **The effect**: being above the threshold makes it more likely to be in the higher course, but not certain
+   (a fuzzy discontinuity), so the effect of the higher course is estimated with being above the threshold as
+   an instrument, comparing students of the same threshold (`6_rd_estimates.py`). Characteristics fixed before
+   the assignment (sex, age, having repeated) should not jump at the threshold.
 
 ### Things to keep in mind
 
@@ -44,6 +48,11 @@ changes, finishing school, and moving to adult education.
   test (SIMCE, requested to the Agencia de Calidad de la Educación) would be a cleaner outcome.
 - **Thresholds are estimated**, so students close to them should be compared within the same group (group
   fixed effects) and the results checked with other bandwidths and sharpness levels.
+- **GPA has one decimal**, so the distance to the threshold only takes a few values (-0.2, -0.1, 0, 0.1, ...).
+  Very narrow bandwidths leave too few of them on each side; the estimates use 0.2, 0.3 and 0.5.
+- **The definition of a group changes in 2013**: from then on courses of different shifts are not compared,
+  because the shift (`cod_jor`) is only published from 2013. Before, a morning and an afternoon course of the
+  same grade count as one group.
 - **Prior GPA 0 means withdrawn**, and is treated as missing. **2020 and 2021** have no attendance data and
   lenient promotion rules.
 
@@ -53,8 +62,11 @@ changes, finishing school, and moving to adult education.
 - [x] The three MINEDUC datasets, clean, documented and with a data dictionary (flow 1).
 - [x] Cohorts from kinder and from 1° básico, with how each child ended, including the move to adult education.
 - [x] Which school-grade-years track, the GPA thresholds, and the students just below and above them.
-- [ ] Run tracking on the full data and look at how common it is, by grade, year and type of school.
-- [ ] Regression discontinuity estimates, with group fixed effects and several bandwidths.
+- [x] Run tracking on the full data: about 21,000 groups with 2+ courses a year; 36% of them sort by GPA in
+      2003 and 21% in 2023, but only about a fifth of those (falling over time) remixed their courses.
+- [x] Regression discontinuity estimates, with a fixed effect per threshold and several bandwidths.
+- [ ] Look at how common tracking is by grade and type of school, and why it falls over time.
+- [ ] Robustness: other sharpness levels, a group definition without the shift in every year, placebo thresholds.
 - [ ] Request student-level SIMCE scores, as an outcome not set by teachers.
 - [ ] Map geographically the best bus routes from kids' houses to school, with their frequencies.
 
@@ -121,6 +133,7 @@ Rows keep their original frequency: student x month in assistance, student x yea
 | `3_cohorts.py` | Follows the cohorts in `COHORTS` (kinder 2011-2015 to 8° básico, 1° básico 2002-2012 to 4° medio), joins the attendance, and says how each child ended | `data/analysis/cohort_panel.parquet`, `data/analysis/cohorts.parquet` |
 | `4_tracking.py` | Which school-grade-shift-years sort students into courses by last year's GPA, whether their courses were remixed, and the GPA threshold between each pair of courses | `data/analysis/tracking/groups_<year>`, `courses_<year>`, `thresholds_<year>` |
 | `5_rd_sample.py` | The students within `RD_BANDWIDTH` of a sharp threshold, with their outcomes that year, one and two years later, and at the end of school | `data/analysis/rd_sample.parquet` |
+| `6_rd_estimates.py` | The effect of being sent to the higher course: first stage, reduced form and instrumental variables, local linear on each side of the threshold, with a fixed effect per threshold and errors clustered by school, for several bandwidths, with all thresholds and with remixed courses only; balance checks; plots | [`results/rd_estimates.csv`](results), [`results/rd_plots.png`](results) |
 
 The tracking settings (course size, permutations, significance, bandwidth, sharpness) are in
 `code/masterfile_analysis.py`. Set `TRACKING_SCHOOL_FRACTION = 0.05` to try it fast on 5% of the schools.
