@@ -38,6 +38,7 @@ DOCS = DATA / "docs"                  # 2_extraction:  PDFs and codebooks found 
 CLEAN = DATA / "clean"                # 3_unification: one parquet per year, same columns every year
 SAMPLE = DATA / "sample"              # 5_sampling:    a sample of students
 MAPPING = ROOT / "config" / "data_mapping.xlsx"  # column names of each year
+DESCRIPTIONS = ROOT / "config" / "descriptions"  # what each variable means, from the MINEDUC record layouts
 DICTIONARY = ROOT / "docs" / "dictionary"        # 4_dictionary: data dictionary (in git)
 
 # [2] Settings ----

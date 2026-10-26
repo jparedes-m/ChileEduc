@@ -47,10 +47,9 @@ def write_mapping(path):
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "performance"
-    ws.append(["desired_names", 2015, "description"])
-    for row in [["year", "AGNO", "School year"], ["rbd", "RBD", "School id | RBD"], ["cod_ense", "COD_ENSE", None],
-                ["let_cur", "LET_CUR", None], ["mrun", "MRUN", None], ["prom_gral", "PROM_GRAL", "GPA"],
-                ["nom_rbd", "nom_rbd", None], ["sit_fin", None, None]]:
+    ws.append(["desired_names", 2015])
+    for row in [["year", "AGNO"], ["rbd", "RBD"], ["cod_ense", "COD_ENSE"], ["let_cur", "LET_CUR"],
+                ["mrun", "MRUN"], ["prom_gral", "PROM_GRAL"], ["nom_rbd", "nom_rbd"], ["sit_fin", None]]:
         ws.append(row)
     ws = wb.create_sheet("assistance")
     ws.append(["desired_names", "2015_03"])
@@ -70,6 +69,13 @@ def project(tmp_path):
     (tmp_path / "masterfile.py").write_text(master.replace('source("1_scraping.py")', '# source("1_scraping.py")'))
     (tmp_path / "config").mkdir()
     write_mapping(tmp_path / "config" / "data_mapping.xlsx")
+    (tmp_path / "config" / "descriptions").mkdir()
+    (tmp_path / "config" / "descriptions" / "performance.csv").write_text(
+        "variable,description,values,notes\n"
+        "rbd,School id | RBD,,\n"
+        "sit_fin,Final status,P: Promoted; R: Failed,\n",
+        encoding="utf-8",
+    )
 
     raw = tmp_path / "data" / "raw"
     for dataset in ("performance", "assistance", "kinder"):
@@ -122,7 +128,8 @@ def test_unification(project):
 def test_dictionary(project):
     text = (project / "docs" / "dictionary" / "performance.md").read_text(encoding="utf-8")
     assert "| rbd | Int32 | School id \\| RBD | RBD | 2015 | 100.0 | 100 to 100 |" in text
-    assert "| sit_fin | String |  |  |  | 0.0 |  |" in text
+    assert "| sit_fin | String | Final status |  |  | 0.0 |  |" in text
+    assert "- **sit_fin**: P: Promoted; R: Failed." in text
     assert "| COD_MEN | 2015 | 1 | cod_men |" in text
 
 

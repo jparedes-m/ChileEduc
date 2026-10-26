@@ -1,9 +1,11 @@
 # [4] Dictionary ----
 # Writes docs/dictionary/<dataset>.md from the clean data:
 #   - every variable with its type, description, original names, years with data, % non-missing and range
+#   - the codes and notes of each variable
 #   - rows per year
 #   - every column MINEDUC published, with the years it appears in (shows what the mapping is missing)
-# Descriptions come from the "description" column of the mapping file. Rewritten on every run.
+# Descriptions, codes and notes come from config/descriptions/<dataset>.csv, written from the MINEDUC
+# record layouts in docs/mineduc/<dataset>/. Rewritten on every run.
 
 
 def years_text(years):
@@ -46,23 +48,31 @@ for dataset in DATASETS:
         *[pl.col(c).max().alias(f"{c} max") for c in numeric],
     ).collect().row(0, named=True)
 
-    # Descriptions and original names, from the mapping
+    # Descriptions, codes and notes
+    described = {}
+    if (DESCRIPTIONS / f"{dataset}.csv").exists():
+        for row in pl.read_csv(DESCRIPTIONS / f"{dataset}.csv", infer_schema=False).iter_rows(named=True):
+            described[row["variable"]] = row
+    if missing := [c for c in variables if c not in described]:
+        print(f"  no description in config/descriptions/{dataset}.csv for: {', '.join(missing)}")
+
+    # Original names, from the mapping
     mapping = read_mapping(dataset)
     desired = [d.strip().lower() for d in mapping["desired_names"]]
-    descriptions = dict(zip(desired, mapping["description"])) if "description" in mapping.columns else {}
     originals = {d: set() for d in desired}
     for year_col in year_columns(mapping):
         for d, original in zip(desired, mapping[year_col]):
             if original:
-                originals[d].add(original.strip())
+                originals[d].add(original.strip().upper())
 
     total = per_year["rows"].sum()
-    variable_rows = [["year", schema["year"], "", "", years_text(per_year["year"]), "100.0", ""]]
+    variable_rows = [["year", schema["year"], described.get("year", {}).get("description"), "",
+                      years_text(per_year["year"]), "100.0", ""]]
     for c in variables:
         variable_rows.append([
             c,
             schema[c],
-            descriptions.get(c),
+            described.get(c, {}).get("description"),
             ", ".join(sorted(originals.get(c, {c.upper()}))),  # extras were published under their own name
             years_text(per_year.filter(pl.col(c) > 0)["year"]),
             f"{100 * per_year[c].sum() / total:.1f}",
@@ -84,8 +94,8 @@ for dataset in DATASETS:
     lines = [
         f"# {dataset.capitalize()}: data dictionary",
         "",
-        "Made by `code/4_dictionary.py`; do not edit by hand. Descriptions come from the `description` column of",
-        "`config/data_mapping.xlsx`.",
+        "Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and notes come from",
+        f"`config/descriptions/{dataset}.csv`, written from the MINEDUC record layouts in `docs/mineduc/{dataset}/`.",
         "",
         f"{total:,} rows, {per_year.height} years.",
         "",
@@ -93,6 +103,12 @@ for dataset in DATASETS:
         "",
         *md_table(["variable", "type", "description", "original names", "years with data", "% non-missing", "range"],
                   variable_rows),
+        "",
+        "## Codes and notes",
+        "",
+        *[f"- **{c}**: " + " ".join(filter(None, [info["values"] and f"{info['values']}.", info["notes"]]))
+          for c in ["year"] + variables
+          if (info := described.get(c)) and (info["values"] or info["notes"])],
         "",
         "## Rows per year",
         "",

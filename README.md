@@ -59,12 +59,13 @@ made, so rerunning only processes new years.
 | `1_scraping.py` | Downloads the .zip/.rar files from datosabiertos.mineduc.cl | `data/raw/<dataset>/performance_2015.zip`, `assistance_2015_03.rar`, ... |
 | `2_extraction.py` | Unpacks them and saves the data as parquet; keeps the PDFs and codebooks | `data/intermediate/<dataset>/*.parquet`, `data/docs/<dataset>/` |
 | `3_unification.py` | Same columns, names and types every year; regular education only | `data/clean/<dataset>/*.parquet` |
-| `4_dictionary.py` | Data dictionary: type, description, years and coverage of every variable | [`docs/dictionary/<dataset>.md`](docs/dictionary) |
+| `4_dictionary.py` | Data dictionary: type, description, codes, years and coverage of every variable | [`docs/dictionary/<dataset>.md`](docs/dictionary) |
 | `5_sampling.py` | Sample of students (2%, 0.5% in assistance) with all their rows | `data/sample/<dataset>_sample.parquet` |
 
 Rows keep their original frequency: student x month in assistance, student x year in kinder and performance.
 
-Unification needs `config/data_mapping.xlsx` (see `config/README.md`). RAR files need 7-Zip or unrar installed.
+Unification needs `config/data_mapping.xlsx`, and the dictionary takes the variable descriptions from
+`config/descriptions/` (see `config/README.md`). The MINEDUC documentation behind them is in [`docs/mineduc/`](docs/mineduc). RAR files need 7-Zip or unrar installed.
 The original scripts are kept in `vintage/`.
 
 ## Exploring the Data

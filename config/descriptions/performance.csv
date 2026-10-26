@@ -1,0 +1,43 @@
+variable,description,values,notes
+year,Año escolar (AGNO),,
+rbd,Rol base de datos del establecimiento,,Identificador del colegio.
+dgv_rbd,Dígito verificador del RBD,,
+nom_rbd,Nombre del establecimiento,,
+let_rbd,Letra del establecimiento,,Solo 2002-2009.
+num_rbd,Número del establecimiento,,Solo 2002-2009.
+cod_reg_rbd,Código de la región en que se ubica el establecimiento,Ver Anexo I,Ñuble (16) existe desde septiembre de 2018.
+nom_reg_rbd_a,Nombre abreviado de la región en que se ubica el establecimiento,Ver Anexo I,
+cod_pro_rbd,Código oficial de la provincia en que se ubica el establecimiento,Ver Anexo I,
+cod_com_rbd,Código oficial (SUBDERE) de la comuna en que se ubica el establecimiento,,
+nom_com_rbd,Nombre de la comuna en que se ubica el establecimiento,,
+cod_deprov_rbd,Código del Departamento Provincial de Educación al que pertenece el establecimiento,,
+nom_deprov_rbd,Nombre del Departamento Provincial de Educación al que pertenece el establecimiento,,
+cod_depe,Dependencia del establecimiento,1: Corporación Municipal; 2: Municipal DAEM; 3: Particular Subvencionado; 4: Particular Pagado (o no subvencionado); 5: Corporación de Administración Delegada (DL 3166); 6: Servicio Local de Educación,
+cod_depe2,Dependencia del establecimiento (agrupada),1: Municipal; 2: Particular Subvencionado; 3: Particular Pagado (o no subvencionado); 4: Corporación de Administración Delegada (DL 3166); 5: Servicio Local de Educación,
+rural_rbd,Índice de ruralidad del establecimiento,0: Urbano; 1: Rural,
+estado_estab,Estado del establecimiento,1: Funcionando; 2: En receso; 3: Cerrado; 4: Autorizado sin matrícula,"Desde 2015, ESTADO_ESTAB = 1 da los estudiantes en establecimientos funcionando."
+cod_ense,Código de enseñanza,"110: Básica; 310: Media HC niños y jóvenes; 410, 510, 610, 710, 810: Media TP niños y jóvenes (comercial, industrial, técnica, agrícola, marítima); 910: Media artística niños y jóvenes; 160-167 y los que terminan en 60-63 (360, 463, ...): adultos; 211-299: educación especial",Ver Anexo II. La base limpia conserva solo enseñanza regular de niños y jóvenes. Educación especial aparece en la base desde 2023.
+cod_ense2,Niveles de enseñanza agrupados,2: Básica niños; 3: Básica adultos; 4: Educación especial; 5: Media HC jóvenes; 6: Media HC adultos; 7: Media TP y artística jóvenes; 8: Media TP y artística adultos,Ver Anexo III.
+cod_grado,Código de grado,Con cod_ense 110: 1-8 = 1° a 8° básico. Con media niños y jóvenes: 1-4 = 1° a 4° medio,Ver Anexo IV; el significado depende de cod_ense.
+let_cur,Letra del curso,,"Con rbd, cod_ense y cod_grado identifica el curso."
+cod_jor,Jornada en la que asiste a clases,1: Mañana; 2: Tarde; 3: Mañana y tarde; 4: Vespertina / Nocturna,
+cod_tip_cur,Índice de tipo de curso,0: Curso simple; 1-6: Curso combinado,En básica niños se pueden combinar 1° a 6° y/o 7° y 8°.
+cod_des_cur,Descripción del curso (solo media TP),0: No aplica; 1: Sólo liceo; 2: Dual; 3: Otro,
+mrun,Máscara del RUN del estudiante,,Identificador del estudiante.
+gen_alu,Género del estudiante,0: Sin información; 1: Masculino; 2: Femenino,En 2023 MINEDUC eliminó 2 registros con género no binario para proteger su identidad.
+fec_nac_alu,Fecha de nacimiento del estudiante (AAAAMM),,
+edad_alu,Edad al 30 de junio del año escolar,,"Desde 2016, las edades no validadas con el Registro Civil (99 o más; 25 o más, o 5 o menos en básica y media niños y jóvenes) están vacías."
+int_alu,Indicador de alumno integrado: estudiante con necesidades educativas especiales permanentes o transitorias (Decreto 170/2010),0: No; 1: Sí; .: Sin información,
+gd_alu,Indica si el alumno es atendido en un grupo diferencial (solo básica niños y jóvenes),0: No; 1: Sí,Solo 2013-2015.
+cod_reg_alu,Código de la región de residencia del estudiante,0: Sin información,
+cod_com_alu,Código oficial (SUBDERE) de la comuna de residencia del estudiante (autodeclarado y voluntario),0: Sin información,
+nom_com_alu,Nombre de la comuna de residencia del estudiante,,
+cod_rama,Código de rama (solo media TP y artística),0: Ciclo general / Sin información; 400: Comercial; 500: Industrial; 600: Técnica; 700: Agrícola; 800: Marítima; 900: Artística,Ver Anexo V. Ciclo general = 1° y 2° medio.
+cod_sec,Código de sector económico (solo media TP y artística),Ver Anexo VI,
+cod_espe,Código de especialidad (solo media TP y artística),Ver Anexo VI,
+fec_ing_alu,Fecha de ingreso del alumno al establecimiento,,Solo 2011.
+prom_gral,Promedio general anual,,"No es necesariamente el promedio aritmético de los subsectores. Los retirados tienen 0,0: tratar 0 como sin nota."
+asistencia,Porcentaje anual de asistencia,,
+sit_fin,Situación de promoción al cierre del año escolar,P: Promovido; R: Reprobado; Y: Retirado; vacío: Sin información,
+sit_fin_r,"Situación de promoción al cierre del año escolar, con indicador de traslado",P: Promovido; R: Reprobado; Y: Retirado; T: Trasladado; vacío: Sin información,"Trasladado: se cambió de establecimiento, o de curso en el mismo establecimiento, durante el año."
+cod_men,Mención (media TP),Ver Anexo X,Código de 8 dígitos: especialidad + mención.

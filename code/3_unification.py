@@ -4,8 +4,8 @@
 # (the inputs are never overwritten). Years already unified are skipped.
 #
 # The mapping file (config/data_mapping.xlsx) has one sheet per dataset: a "desired_names"
-# column, an optional "description" column, and one column per year (2015, or 2015_03 for
-# assistance) with that year's original column name.
+# column and one column per year (2015, or 2015_03 for assistance) with that year's original
+# column name.
 #
 # Published columns that the mapping does not mention are kept too, under their own name
 # in lowercase, if they appear in at least MIN_YEAR_SHARE of the years.
@@ -44,6 +44,7 @@ TYPES = {
         "mrun": I64, "gen_alu": I32, "fec_nac_alu": STR, "edad_alu": I32, "cod_reg_alu": I32,
         "cod_com_alu": I32, "nom_com_alu": STR, "cod_rama": I32, "cod_sec": I32, "cod_espe": I32,
         "prom_gral": F64, "asistencia": I32, "sit_fin": STR, "sit_fin_r": STR, "cod_men": I32,
+        "int_alu": I32, "gd_alu": I32,
     },
 }
 
