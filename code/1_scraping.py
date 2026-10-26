@@ -27,7 +27,8 @@ for dataset, info in DATASETS.items():
     if not links:
         print(f"{dataset}: no .zip/.rar links found on {info['url']} (did the page change?)")
 
-    # Decide the name of each file and keep only the ones we don't have yet
+    # Decide the name of each file and keep only the ones we don't have yet (as .zip or .rar, any upper/lower case)
+    have = {p.stem.lower() for p in folder.iterdir() if p.suffix.lower() in (".zip", ".rar")}
     to_download = {}
     for link in links:
         original = unquote(Path(urlparse(link).path).name)
@@ -35,11 +36,14 @@ for dataset, info in DATASETS.items():
         if new_name is None:
             print(f"  {original}: no year in the name, not downloaded ({link})")
             continue
-        target = folder / (new_name + Path(original).suffix.lower())
-        if not target.exists():
-            to_download[link] = target
+        if new_name in have:
+            continue
+        if any(t.stem == new_name for t in to_download.values()):
+            print(f"  {original}: another file on the page is also {new_name}, not downloaded ({link})")
+            continue
+        to_download[link] = folder / (new_name + Path(original).suffix.lower())
 
-    print(f"{dataset}: {len(links)} files on the page, {len(to_download)} new")
+    print(f"{dataset}: {len(links)} files on the page, {len(to_download)} new: {', '.join(t.name for t in to_download.values())}")
     with ThreadPoolExecutor(max_workers=4) as pool:
         list(pool.map(download, to_download.keys(), to_download.values()))
 
