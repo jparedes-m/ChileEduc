@@ -30,7 +30,7 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 | let_cur | String | Letra del curso | LET_CUR | 2011-2019, 2022-2023 | 100.0 |  |
 | mrun | Int64 | Identificador único del estudiante (máscara del RUN) | MRUN | 2011-2019, 2022-2023 | 100.0 | 17 to 27592487 |
 | gen_alu | Int32 | Sexo del estudiante | GEN_ALU | 2011-2019, 2022-2023 | 100.0 | 0 to 2 |
-| fec_nac_alu | Int32 | Fecha de nacimiento del estudiante (AAAAMM) | FEC_NAC_ALU | 2011-2019, 2022-2023 | 98.2 | 190000 to 20140314 |
+| fec_nac_alu | Int32 | Fecha de nacimiento del estudiante (AAAAMM) | FEC_NAC_ALU | 2011-2019, 2022-2023 | 98.2 | 19905 to 202309 |
 | cod_com_alu | Int32 | Código oficial de la comuna de residencia (autodeclarado y voluntario) | COD_COM_ALU | 2011-2019, 2022-2023 | 100.0 | 0 to 16305 |
 | nom_com_alu | String | Nombre de la comuna de residencia | NOM_COM_ALU | 2011-2019, 2022-2023 | 100.0 |  |
 | dias_asistidos | Int32 | Número total de días asistidos en el mes | DIAS_ASISTIDOS | 2011-2019, 2022-2023 | 100.0 | 0 to 31 |
@@ -48,7 +48,7 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 - **cod_deprov_rbd**: Desde 2015.
 - **nom_deprov_rbd**: Desde 2015.
 - **rural_rbd**: 0: Urbana; 1: Rural.
-- **cod_depe**: 1: Corporación Municipal; 2: Municipal DAEM; 3: Particular Subvencionado; 4: Particular Pagado; 5: Corporación de Administración Delegada; 6: Servicio Local de Educación. Los datos traen también valores 7 y 8, que ningún esquema de registro documenta.
+- **cod_depe**: 1: Corporación Municipal; 2: Municipal DAEM; 3: Particular Subvencionado; 4: Particular Pagado; 5: Corporación de Administración Delegada; 6: Servicio Local de Educación. Hay una sola fila con valor 7 u 8, códigos que ningún esquema de registro documenta.
 - **cod_depe2**: 1: Municipal; 2: Particular Subvencionado; 3: Particular Pagado (o no subvencionado); 4: Corporación de Administración Delegada (DL 3166); 5: Servicio Local de Educación. Desde junio de 2014.
 - **cod_ense**: 10: Educación parvularia; 110: Básica; 310: Media HC niños y jóvenes; 410, 510, 610, 710, 810: Media TP niños y jóvenes; 910: Media artística niños y jóvenes; 165, 167 y los que terminan en 63: adultos; 211-299: educación especial. Ver Anexo II. La base limpia conserva parvularia (10) y la enseñanza regular de niños y jóvenes.
 - **cod_ense2**: 1: Educación parvularia; 2: Básica niños; 3: Básica adultos; 4: Educación especial; 5: Media HC jóvenes; 6: Media HC adultos; 7: Media TP y artística jóvenes; 8: Media TP y artística adultos. Desde 2016. Ver Anexo III.
@@ -56,10 +56,10 @@ Made by `code/4_dictionary.py`; do not edit by hand. Descriptions, codes and not
 - **let_cur**: Con rbd, cod_ense y cod_grado identifica el curso.
 - **mrun**: Un estudiante puede tener más de una fila en un mes si se cambió de colegio, de curso o de nivel.
 - **gen_alu**: 0: Sin información; 1: Hombre; 2: Mujer; 3: No binario. En diciembre de 2023 MINEDUC eliminó 2 registros con género no binario para proteger su identidad.
-- **fec_nac_alu**: 190001, 180001: Sin información. Algunos valores vienen como AAAAMMDD (el máximo es 20140314). Las fechas atípicas se deben a errores al ingresar el RUN en el SIGE.
+- **fec_nac_alu**: 190001, 180001: Sin información. MINEDUC la publica como AAAAMMDD en algunos años; la base limpia la deja siempre como AAAAMM. Las fechas atípicas se deben a errores al ingresar el RUN en el SIGE.
 - **cod_com_alu**: 0: Sin información (valor por defecto).
-- **dias_asistidos**: Puede ser 0 para retirados que siguen en el sistema. Los datos llegan hasta 31 días, más que el máximo de días trabajados (28).
-- **asis_promedio**: Es una proporción, no un porcentaje. Hay valores sobre 1 (hasta 2,2) donde los días asistidos superan a los trabajados: tratarlos como errores.
+- **dias_asistidos**: Puede ser 0 para retirados que siguen en el sistema. En 38 filas supera a dias_trabajados (errores de registro).
+- **asis_promedio**: Es una proporción, no un porcentaje. Pasa de 1 en las 38 filas donde los días asistidos superan a los trabajados: tratarlas como errores.
 
 ## Rows per year
 
