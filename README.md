@@ -34,11 +34,54 @@ The datasets include:
   - **Sistema de Información General de Estudiantes (SIGE)** for **2009 - 2023**.
 - Total observations: **73,668,732**.
 
-## Data Collection and Storage
+## Running the Pipeline
 
-- The **data scraping and database structuring scripts** are located in the **code folder**.
-- The datasets themselves are **not uploaded** due to their **large size**.
+Everything runs from `masterfile.py`, the only file that defines paths and settings.
+
+```bash
+pip install -r requirements.txt
+export CHILEEDUC_DATA=/path/to/data   # optional, defaults to ./data
+python masterfile.py                  # scraping -> extraction -> unification -> sampling
+python masterfile.py --steps unification --datasets performance
+```
+
+| Step | Module | Output |
+|------|--------|--------|
+| 1. Scraping | `pipeline/scraping.py` | `raw/<dataset>/<dataset>_<year>[_<month>].zip/.rar` |
+| 2. Extraction | `pipeline/extraction.py` | `intermediate/<dataset>/*.parquet` (published columns, as text) |
+| 3. Unification | `pipeline/unification.py` | `clean/<dataset>/*.parquet` (same columns and types every year, regular education only) |
+| 4. Sampling | `pipeline/sampling.py` | `sample/<dataset>_sample.parquet` (2% of students, the same students in every dataset) |
+
+Every step skips outputs that already exist, so a rerun only processes new files; `--overwrite` redoes them.
+Inputs are never overwritten. Each run writes a log to `logs/`.
+
+Unification needs `config/data_mapping.xlsx` (see `config/README.md`). RAR archives need 7-Zip or unrar installed.
+
+## Exploring the Data
+
+The clean files of each dataset share one schema, so they read as a single table without concatenating them:
+
+```python
+import polars as pl
+
+perf = pl.scan_parquet("data/clean/performance/*.parquet")
+perf.group_by("year").agg(pl.len(), pl.col("prom_gral").mean()).sort("year").collect()
+```
+
+The same files can be queried with SQL through DuckDB, which runs locally with no server:
+
+```python
+import duckdb
+
+duckdb.sql("""
+    SELECT year, count(*) AS students, avg(prom_gral) AS gpa
+    FROM 'data/clean/performance/*.parquet'
+    GROUP BY year ORDER BY year
+""").pl()
+```
+
+The datasets themselves are **not uploaded** due to their **large size**.
 
 ## To-Do List
-- [ ] Do a master file for data conformation, where it does not repeat every time the working directory. 
+- [x] Master file for data conformation, where it does not repeat every time the working directory.
 - [ ] We need to map geographically the best bus routes from kids house to school with their frequencies.

@@ -1,0 +1,9 @@
+polars>=1.20
+fastexcel>=0.12      # Excel reader used by polars for the mapping file
+requests>=2.31
+beautifulsoup4>=4.12
+patool>=2.0          # .rar archives; also needs 7-Zip or unrar installed on the system
+duckdb>=1.1          # optional: SQL over the Parquet files
+pyarrow>=15          # lets DuckDB hand results to polars (.pl())
+pytest>=8            # tests
+# selenium>=4        # only if the MINEDUC pages stop listing their files in plain HTML
