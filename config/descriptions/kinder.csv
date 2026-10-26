@@ -3,7 +3,7 @@ year,Año del proceso (AGNO),,
 month,Mes del proceso (MES),,"Desde 2013. La información es al 30 de abril de cada año, descargada en agosto (2011: noviembre)."
 mrun,Máscara del RUN del alumno,,Identificador del estudiante; el mismo que en assistance y performance.
 sex_stud,"Sexo del alumno (SEXO_ALU, desde 2019 GEN_ALU)",0: Sin información; 1: Hombre; 2: Mujer,
-birth_date_stud,Fecha de nacimiento del alumno (AAAAMM),190001: Sin información,
+birth_date_stud,Fecha de nacimiento del alumno (AAAAMM),190001: Sin información,MINEDUC la publica como AAAAMMDD en algunos años; la base limpia la deja siempre como AAAAMM.
 school_id,Identificador del establecimiento (ID_ESTAB),,Un establecimiento se identifica con school_id y origen juntos.
 rbd,Rol base de datos del establecimiento (MINEDUC),,Desde 2014. Solo filas MINEDUC.
 id_estab_j,Identificador del establecimiento JUNJI,,Desde 2014. Solo filas JUNJI.

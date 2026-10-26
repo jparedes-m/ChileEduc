@@ -24,7 +24,10 @@ Every file removed from this folder is still in the git history.
   comparable across programs and years.
 - **Reference date**: the data is as of April 30 of each year, downloaded in August (November in 2011).
 - **Row counts**: our raw counts match the official ones except in 2013 (9 fewer rows), 2020 (6,490 fewer)
-  and 2021 (8,604 fewer). Still being checked.
+  and 2021 (8,604 fewer). The data was read in full (one CSV per archive, no broken lines): the archives hold
+  an earlier version of the data than the one the record layout counts (the 2020 CSV is dated 2020-12-01 and
+  the 2021 one 2021-11-12, while the layout is from 2021-11-29). Worth downloading those years again when the
+  MINEDUC site is back.
 - **`.` means no information or does not apply** in numeric columns; unification leaves it empty.
 
 The variable descriptions used by the data dictionary are in `config/descriptions/kinder.csv`.

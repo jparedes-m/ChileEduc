@@ -61,7 +61,7 @@ def write_mapping(path):
     ws = wb.create_sheet("assistance")
     ws.append(["desired_names", "2015_03"])
     # "ANIO" is not in the file: year must come from the file name
-    for row in [["year", "ANIO"], ["month", "MES"], ["mrun", "MRUN"], ["cod_ense", "COD_ENSE"]]:
+    for row in [["year", "ANIO"], ["month", "MES"], ["mrun", "MRUN"], ["cod_ense", "COD_ENSE"], ["fec_nac_alu", "FEC_NAC_ALU"]]:
         ws.append(row)
     ws = wb.create_sheet("kinder")
     ws.append(["desired_names", 2015])
@@ -117,7 +117,7 @@ def project(tmp_path):
 
     # A zip inside a zip, UTF-8 with BOM
     inner = tmp_path / "inner.zip"
-    write_zip(inner, {"asistencia_marzo_2015.csv": "\ufeffAGNO;MES;MRUN;COD_ENSE\n2015;3;1;110\n2015;3;2;110\n".encode()})
+    write_zip(inner, {"asistencia_marzo_2015.csv": "\ufeffAGNO;MES;MRUN;COD_ENSE;FEC_NAC_ALU\n2015;3;1;110;20050314\n2015;3;2;110;200506\n".encode()})
     write_zip(raw / "assistance" / "assistance_2015_03.zip", {"carpeta/asistencia.zip": inner.read_bytes()})
 
     result = subprocess.run([sys.executable, "masterfile.py"], cwd=tmp_path, capture_output=True, text=True)
@@ -140,7 +140,8 @@ def test_unification(project):
     assert perf.schema["year"] == pl.Int32 and perf.schema["sit_fin"] == pl.String
 
     asis = pl.read_parquet(project / "data" / "clean" / "assistance" / "assistance_2015_03.parquet")
-    assert asis.columns == ["year", "month", "mrun", "cod_ense", "agno"]  # AGNO is unmapped, so kept as an extra
+    assert asis.columns == ["year", "month", "mrun", "cod_ense", "fec_nac_alu", "agno"]  # AGNO is unmapped: an extra
+    assert asis["fec_nac_alu"].to_list() == [200503, 200506]  # AAAAMMDD becomes AAAAMM
     assert asis["year"].to_list() == [2015, 2015]
     assert asis["month"].to_list() == [3, 3]
 

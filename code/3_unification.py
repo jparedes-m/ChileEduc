@@ -41,7 +41,7 @@ TYPES = {
     "performance": {
         "year": I32, **SCHOOL, "estado_estab": I32, "cod_ense": I32, "cod_ense2": I32,
         "cod_grado": I32, "let_cur": STR, "cod_jor": I32, "cod_tip_cur": I32, "cod_des_cur": I32,
-        "mrun": I64, "gen_alu": I32, "fec_nac_alu": STR, "edad_alu": I32, "cod_reg_alu": I32,
+        "mrun": I64, "gen_alu": I32, "fec_nac_alu": I32, "edad_alu": I32, "cod_reg_alu": I32,
         "cod_com_alu": I32, "nom_com_alu": STR, "cod_rama": I32, "cod_sec": I32, "cod_espe": I32,
         "prom_gral": F64, "asistencia": I32, "sit_fin": STR, "sit_fin_r": STR, "cod_men": I32,
         "int_alu": I32, "gd_alu": I32,
@@ -115,6 +115,12 @@ for dataset in DATASETS:
             lost = ((df[c].str.strip_chars().fill_null("") != "") & typed[c].is_null()).sum()
             if lost:
                 print(f"  {f.stem}: {lost} values of {c} are not numbers, set to null")
+
+        # Birth dates come as AAAAMM in some years and AAAAMMDD in others: keep AAAAMM everywhere
+        typed = typed.with_columns(
+            pl.when(pl.col(c) > 999_999).then(pl.col(c) // 100).otherwise(pl.col(c)).alias(c)
+            for c in ("fec_nac_alu", "birth_date_stud") if c in typed.columns
+        )
 
         # Regular education only
         if dataset == "kinder":
