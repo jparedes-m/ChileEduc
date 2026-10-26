@@ -96,6 +96,75 @@ In `results/rd_estimates.csv` and the table the script prints:
   (before 2013 the shift is not published, so groups mix shifts). A result worth reporting holds across
   bandwidths (0.2, 0.3, 0.5) and specifications.
 
+### Findings so far
+
+**The data.** The three MINEDUC datasets are complete: performance (2002-2023) and assistance match the official
+row counts; kinder misses a few rows in 2013, 2020 and 2021 because the archives hold an earlier version of
+those years. `mrun` links students from kinder to 4° medio, also across the change from RECH (to 2008) to SIGE.
+
+**Cohorts.** Of the children who entered 1° básico, 70% finished 4° medio in the 2002 cohort and 85% in the 2010
+one. Almost all of the gain comes from fewer moving to adult education (24% to 10%); dropping out of school
+altogether stays at 2-3%. From kinder (2011-2015), 94-97% finish 8° básico.
+
+**Tracking.** About 21,000 school-grade-shift-years a year have 2+ courses. Those that sort students by last
+year's GPA fall from 36% (2003) to 21% (2023), and those that also remix their courses, the clearest cases of
+sorting, from about 1,500 a year to 300-500 from 2020 on. Why tracking falls is an open question.
+
+**The effect of the higher course** (split sample, bandwidth 0.3, `main` specification; standard errors
+clustered by school in parentheses):
+
+| | Effect | Mean just below |
+|---|---|---|
+| First stage: in the higher course when just above the threshold | +0.28 (0.03) | 0.13 |
+| GPA, that year | +0.054 (0.016) | 5.3 |
+| GPA, 1 year later | +0.047 (0.018) | 5.3 |
+| GPA, 2 years later | +0.041 (0.020) | 5.3 |
+| Failed the grade, attendance, same school 1 year later | about 0 | |
+| Finished 4° medio, moved to adult education | about 0, with standard errors of 2.5 points | |
+
+- **Balance**: with the split sample, sex and age no longer jump at the threshold. Having repeated the year
+  before still does (+1.4 points, in media and 2003-2012), but not without the students exactly at the threshold
+  (`donut`): schools seem to place repeaters by another rule right at the threshold. With controls, the
+  effects do not change.
+- **The first stage fell** from 0.63, when thresholds and effects used the same students, to 0.28: a threshold
+  found with half of the students is less precise for the other half. It is weak in básica (0.14) and in
+  2013-2023 (0.20), where the effects are imprecise.
+- **Reading it**: being in the higher course instead of the lower one raises GPA by about 0.05 points (1 to 7
+  scale, about 1% of the mean), for at least two years. Said the other way, a student just below a threshold,
+  in the lower course, gets about 0.05 less than if they had been just above it. Failing, attendance, changing
+  school, finishing school and moving to adult education do not change detectably, although the last two are
+  imprecise. This is a small effect, in line with the small effects of being at the margin of better peers
+  found elsewhere (Duflo, Dupas and Kremer, 2011; Abdulkadiroğlu, Angrist and Pathak, 2014).
+- **What it does not say**: the comparison is between the higher and the lower course, for students near the
+  threshold between them. It does not say whether the lower course is worse than a mixed course in a school
+  that does not track, nor what happens to the students far below the threshold. GPA is set by teachers, so the
+  0.05 can be learning or more generous grading in the higher course.
+
+### Next: does tracking hurt (or help) students with low grades? A difference in differences
+
+The regression discontinuity compares the two courses of a tracking school. The policy question is different:
+are students worse off in a school that tracks than they would be if it did not? `4_tracking.py` says, for every
+school, grade and year, whether it tracks, so schools that **start** (or **stop**) tracking can be compared,
+before and after, with schools that do not change:
+
+1. **Units and events**: a school-grade (`rbd`, `cod_ense`, `grado`) starts tracking in year t when it was not
+   tracked in the years before and is tracked, with remixed courses, from t on. Requiring 2 years before and 2
+   after avoids counting a group that flips because of noise in the test. Stopping is the same in reverse.
+2. **Outcomes, by where students stand**: each student's position in their school-grade by last year's GPA
+   (bottom, middle and top third). Outcomes: GPA, failing, attendance, changing school, and, for the cohorts,
+   finishing school and moving to adult education. The question is mainly about the bottom third.
+3. **Comparison**: school-grades that never track, or have not started yet. Adoption is staggered (schools start
+   in different years), so a plain two-way fixed effects regression can be biased; estimators made for this
+   (Callaway and Sant'Anna, 2021; Sun and Abraham, 2021; de Chaisemartin and D'Haultfœuille, 2020) compare each
+   group that starts in a year only with groups that have not started.
+4. **Event study**: effects year by year around the start (t-3 to t+3). Before t there should be no
+   differences; if there are, schools start tracking because something was already changing.
+5. **Things to watch**: schools may start tracking when their students change (a new principal, more students,
+   a merger), so trends before the start matter; the shift is only published from 2013, so groups before and
+   after are defined differently (use 2013-2023, or groups without the shift in every year); and policy changes
+   such as the Ley de Inclusión (2015) may have changed tracking for everyone at once, which could itself be
+   worth studying.
+
 ### Things to keep in mind
 
 - **GPA is set by each teacher**, so effects on GPA mix learning and grading (see above). A standardized test
@@ -114,16 +183,22 @@ In `results/rd_estimates.csv` and the table the script prints:
 
 - Abdulkadiroğlu, A., Angrist, J. and Pathak, P. (2014). The elite illusion: achievement effects at Boston and
   New York exam schools. *Econometrica*.
+- Callaway, B. and Sant'Anna, P. (2021). Difference-in-differences with multiple time periods. *Journal of
+  Econometrics*.
 - Card, D. and Giuliano, L. (2016). Can tracking raise the test scores of high-ability minority students?
   *American Economic Review*.
 - Card, D., Mas, A. and Rothstein, J. (2008). Tipping and the dynamics of segregation. *Quarterly Journal of
   Economics*.
+- de Chaisemartin, C. and D'Haultfœuille, X. (2020). Two-way fixed effects estimators with heterogeneous
+  treatment effects. *American Economic Review*.
 - Duflo, E., Dupas, P. and Kremer, M. (2011). Peer effects, teacher incentives, and the impact of tracking:
   evidence from a randomized evaluation in Kenya. *American Economic Review*.
 - Murphy, R. and Weinhardt, F. (2020). Top of the class: the importance of ordinal rank. *Review of Economic
   Studies*.
 - Pop-Eleches, C. and Urquiola, M. (2013). Going to a better school: effects and behavioral responses.
   *American Economic Review*.
+- Sun, L. and Abraham, S. (2021). Estimating dynamic treatment effects in event studies with heterogeneous
+  treatment effects. *Journal of Econometrics*.
 
 ### Progress
 
@@ -137,8 +212,15 @@ In `results/rd_estimates.csv` and the table the script prints:
       a first stage of 0.62-0.69 and GPA effects of +0.03-0.05, but sex and age jumped a little at the threshold.
 - [x] Thresholds found with one half of the students and effects measured with the other; donut, controls, and
       splits by level and period.
+- [x] Check balance with the split sample: sex and age are balanced; repeaters still jump, except in the donut.
+      Effect of the higher course on GPA: +0.04 to +0.05 for two years; no detectable effect on failing,
+      attendance, changing school, finishing or adult education (see Findings so far).
+- [ ] Use both halves (thresholds from each half applied to the other), to double the sample and strengthen
+      the first stage.
+- [ ] How much better the peers of the higher course are (difference in mean prior GPA between the two courses).
+- [ ] Why repeaters jump at the threshold.
 - [ ] Look at how common tracking is by grade and type of school, and why it falls over time.
-- [ ] Check balance with the split sample, and read the effects across bandwidths and specifications.
+- [ ] Difference in differences: schools that start or stop tracking, by students' position in their grade.
 - [ ] Robustness: other sharpness levels, a group definition without the shift in every year, placebo thresholds.
 - [ ] Request student-level SIMCE scores, as an outcome not set by teachers.
 - [ ] Map geographically the best bus routes from kids' houses to school, with their frequencies.
