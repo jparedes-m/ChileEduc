@@ -15,9 +15,29 @@ The datasets include:
 Do schools that sort students into courses by their grades (tracking) change how those students do? Chilean
 schools with two or more courses per grade can put the students with the best GPA together. The study finds
 the schools and years that do it, the GPA threshold that separates their courses, and compares the students
-just below it (sent to the lower course) with those just above it (sent to the higher course): a regression
-discontinuity. Both groups are followed in the next years: GPA, attendance, repetition, course and school
+just below it (who end up in the lower course) with those just above it (who end up in the higher course): a
+regression discontinuity. Both groups are followed in the next years: GPA, attendance, repetition, school
 changes, finishing school, and moving to adult education.
+
+### Why being in the higher course could matter
+
+The students just above and just below a threshold are almost the same: their prior GPA differs by a tenth of
+a point. What differs is the course they land in. That course can change how they do through:
+
+- **Peers**: classmates with higher grades can help (better examples, discussion, fewer disruptions) or hurt
+  (being near the bottom of a strong course can lower confidence: the "big fish, little pond" effect, and the
+  effect of rank in class found by Murphy and Weinhardt, 2020).
+- **Teaching**: schools may give different teachers or a faster pace to each course, and teachers may adapt
+  what they teach to the level of the course (Duflo, Dupas and Kremer, 2011, find that tracking in Kenya
+  helped students at every level, and no difference between students just above and just below the median).
+- **Grading**: GPA is set by each teacher, often relative to the course. The same student can get a lower GPA
+  in a stronger course just because the others are better, so effects on GPA mix learning and grading.
+- **Signals and expectations**: being in the "good" course is visible to students, parents and teachers.
+
+Related evidence on being just above an admission threshold to a better school finds modest effects on exam
+results in Romania (Pop-Eleches and Urquiola, 2013) and almost none in the exam schools of Boston and New York
+(Abdulkadiroğlu, Angrist and Pathak, 2014). Card and Giuliano (2016) find gains for high achievers placed in
+separate classes in a large school district in the United States, mostly for Black and Hispanic students.
 
 ### Design
 
@@ -32,22 +52,56 @@ changes, finishing school, and moving to adult education.
    because they had different teachers, not because the school sorted them. `persistence` says how many
    students stayed with their classmates; the sorting that matters is in the groups that were remixed
    (`reshuffled`).
-4. **The threshold**: for each pair of courses next to each other in a tracked group, the prior GPA that best
-   splits them, and how sharp it is (`sharpness`, the share of students on the right side of it).
-5. **Just below and just above**: the students within `RD_BANDWIDTH` GPA points of a sharp threshold, with
-   their outcomes that year and one and two years later, and how they finished school (`5_rd_sample.py`).
-6. **The effect**: being above the threshold makes it more likely to be in the higher course, but not certain
-   (a fuzzy discontinuity), so the effect of the higher course is estimated with being above the threshold as
-   an instrument, comparing students of the same threshold (`6_rd_estimates.py`). Characteristics fixed before
-   the assignment (sex, age, having repeated) should not jump at the threshold.
+4. **The threshold**: for each pair of courses next to each other in a tracked group, the lowest prior GPA
+   that sends students to the higher course, and how sharp it is (`sharpness`, the share of students on the
+   right side of it). Schools do not publish their thresholds, so they are estimated, and estimating them with
+   the same students whose outcomes are compared can create differences at the threshold that are not effects.
+   So the students are split in two halves at random: thresholds are found with one half and the effects are
+   measured with the other (the split-sample approach Card, Mas and Rothstein, 2008, use for estimated tipping
+   points).
+5. **Just below and just above**: the students of the other half within `RD_BANDWIDTH` GPA points of a sharp
+   threshold, with their outcomes that year and one and two years later, and how they finished school
+   (`5_rd_sample.py`).
+6. **The effect** (`6_rd_results.py`): a straight line on each side of the threshold, comparing only students of
+   the same threshold (a fixed effect per threshold), with errors clustered by school. Being above the threshold
+   makes being in the higher course much more likely but not certain (a fuzzy discontinuity), so the effect of
+   the higher course is estimated using being above the threshold as an instrument.
+
+### Reading the results
+
+`results/rd_first_stage.png` is the figure behind the design. Each point is the mean of all the students at
+one distance to their threshold (prior GPA minus threshold; GPA has one decimal, so there are 11 distances
+between -0.5 and 0.5), and its size is how many students are there. The top panels show the share in the higher
+course: it should jump at 0. The bottom panels count the students at each distance: they should change smoothly
+across the threshold; a pile just above it would mean students or schools push GPAs over it. The left column has
+every threshold; the right one only the groups that remixed their courses, the clearest cases of sorting.
+
+In `results/rd_estimates.csv` and the table the script prints:
+
+- **First stage**: how much more likely being in the higher course is just above the threshold. 0.65 means 65
+  percentage points more likely.
+- **Balance**: sex, age and having repeated are fixed before the assignment, so they should not jump at the
+  threshold. If they do, the students just above and below differ in other ways and the effects are not
+  credible. The split sample (step 4) is meant to fix the jumps seen when thresholds and effects used the same
+  students.
+- **Effects** (instrumental variables): the change in an outcome from being in the higher course, for the
+  students whose course depends on being above the threshold (not for students far from it, nor for those who
+  would be in the same course either way). GPA effects are in GPA points (1 to 7); yes/no outcomes (failed,
+  same school, finished, adult education) are in shares, so 0.012 is 1.2 percentage points. Compare each with
+  `mean_below`, the mean of the outcome just below the threshold: 0.012 more finishing when 81% finish is a
+  1.5% increase.
+- **Specifications**: `main` uses every threshold; `remixed` only groups that remixed their courses; `donut`
+  leaves out the students exactly at the threshold (their GPA is the one the threshold was set at); `controls`
+  adds sex, age and having repeated; `basica` and `media` split by level, and `2003-12` and `2013-23` by period
+  (before 2013 the shift is not published, so groups mix shifts). A result worth reporting holds across
+  bandwidths (0.2, 0.3, 0.5) and specifications.
 
 ### Things to keep in mind
 
-- **GPA is set by each teacher**, so a course with a harsher teacher has lower GPAs. GPA works as the running
-  variable (it is what schools sort on), but as an outcome it mixes the student and the teacher. A standardized
-  test (SIMCE, requested to the Agencia de Calidad de la Educación) would be a cleaner outcome.
-- **Thresholds are estimated**, so students close to them should be compared within the same group (group
-  fixed effects) and the results checked with other bandwidths and sharpness levels.
+- **GPA is set by each teacher**, so effects on GPA mix learning and grading (see above). A standardized test
+  (SIMCE, requested to the Agencia de Calidad de la Educación) would be a cleaner outcome.
+- **The effect is local**: it is for students near the threshold between two courses, not for the best or the
+  weakest students of a school.
 - **GPA has one decimal**, so the distance to the threshold only takes a few values (-0.2, -0.1, 0, 0.1, ...).
   Very narrow bandwidths leave too few of them on each side; the estimates use 0.2, 0.3 and 0.5.
 - **The definition of a group changes in 2013**: from then on courses of different shifts are not compared,
@@ -55,6 +109,21 @@ changes, finishing school, and moving to adult education.
   same grade count as one group.
 - **Prior GPA 0 means withdrawn**, and is treated as missing. **2020 and 2021** have no attendance data and
   lenient promotion rules.
+
+### References
+
+- Abdulkadiroğlu, A., Angrist, J. and Pathak, P. (2014). The elite illusion: achievement effects at Boston and
+  New York exam schools. *Econometrica*.
+- Card, D. and Giuliano, L. (2016). Can tracking raise the test scores of high-ability minority students?
+  *American Economic Review*.
+- Card, D., Mas, A. and Rothstein, J. (2008). Tipping and the dynamics of segregation. *Quarterly Journal of
+  Economics*.
+- Duflo, E., Dupas, P. and Kremer, M. (2011). Peer effects, teacher incentives, and the impact of tracking:
+  evidence from a randomized evaluation in Kenya. *American Economic Review*.
+- Murphy, R. and Weinhardt, F. (2020). Top of the class: the importance of ordinal rank. *Review of Economic
+  Studies*.
+- Pop-Eleches, C. and Urquiola, M. (2013). Going to a better school: effects and behavioral responses.
+  *American Economic Review*.
 
 ### Progress
 
@@ -64,8 +133,12 @@ changes, finishing school, and moving to adult education.
 - [x] Which school-grade-years track, the GPA thresholds, and the students just below and above them.
 - [x] Run tracking on the full data: about 21,000 groups with 2+ courses a year; 36% of them sort by GPA in
       2003 and 21% in 2023, but only about a fifth of those (falling over time) remixed their courses.
-- [x] Regression discontinuity estimates, with a fixed effect per threshold and several bandwidths.
+- [x] Regression discontinuity estimates, with a fixed effect per threshold and several bandwidths. First run:
+      a first stage of 0.62-0.69 and GPA effects of +0.03-0.05, but sex and age jumped a little at the threshold.
+- [x] Thresholds found with one half of the students and effects measured with the other; donut, controls, and
+      splits by level and period.
 - [ ] Look at how common tracking is by grade and type of school, and why it falls over time.
+- [ ] Check balance with the split sample, and read the effects across bandwidths and specifications.
 - [ ] Robustness: other sharpness levels, a group definition without the shift in every year, placebo thresholds.
 - [ ] Request student-level SIMCE scores, as an outcome not set by teachers.
 - [ ] Map geographically the best bus routes from kids' houses to school, with their frequencies.
@@ -133,8 +206,7 @@ Rows keep their original frequency: student x month in assistance, student x yea
 | `3_cohorts.py` | Follows the cohorts in `COHORTS` (kinder 2011-2015 to 8° básico, 1° básico 2002-2012 to 4° medio), joins the attendance, and says how each child ended | `data/analysis/cohort_panel.parquet`, `data/analysis/cohorts.parquet` |
 | `4_tracking.py` | Which school-grade-shift-years sort students into courses by last year's GPA, whether their courses were remixed, and the GPA threshold between each pair of courses | `data/analysis/tracking/groups_<year>`, `courses_<year>`, `thresholds_<year>` |
 | `5_rd_sample.py` | The students within `RD_BANDWIDTH` of a sharp threshold, with their outcomes that year, one and two years later, and at the end of school | `data/analysis/rd_sample.parquet` |
-| `6_rd_estimates.py` | The effect of being sent to the higher course: first stage, reduced form and instrumental variables, local linear on each side of the threshold, with a fixed effect per threshold and errors clustered by school, for several bandwidths, with all thresholds and with remixed courses only; balance checks; plots | [`results/rd_estimates.csv`](results), [`results/rd_plots.png`](results) |
-| `7_rd_figure.py` | The figure that motivates the design: share in the higher course and number of students at each distance to the threshold, all thresholds and remixed courses only | [`results/rd_first_stage.png`](results) |
+| `6_rd_results.py` | The effect of being in the higher course: first stage and instrumental variables, a line on each side of the threshold, a fixed effect per threshold, errors clustered by school, for 3 bandwidths and 8 specifications (`SPECS` in the script); balance checks; the figure behind the design and the outcomes by distance to the threshold | [`results/rd_estimates.csv`](results), [`rd_first_stage.png`](results/rd_first_stage.png), [`rd_outcomes.png`](results/rd_outcomes.png) |
 
 The tracking settings (course size, permutations, significance, bandwidth, sharpness) are in
 `code/masterfile_analysis.py`. Set `TRACKING_SCHOOL_FRACTION = 0.05` to try it fast on 5% of the schools.
@@ -159,12 +231,13 @@ and `data/analysis/cohorts.parquet` has one row per child and cohort: `finished`
 went: `adult_education`, `special_education`, `regular_outside_panel` or `not_seen_again`), `censored` (still in
 school at the end of the data), `repetitions`, `withdrawals`, `years_seen`, `last_grade`.
 
-`data/analysis/rd_sample.parquet` has one row per student and threshold: `distance` (prior GPA minus the
-threshold), `above`, `in_high` (in the higher course), `threshold`, `sharpness`, the group's `eta2`, `p_value`,
-`persistence` and `reshuffled`, `group` and `low_rank` (to compare within a group), own and other course size
-and mean prior GPA, the student's `gen_alu`, `edad`, `rezago`, `repeater`, and their outcomes: `prom_gral`,
-`asistencia`, `sit_fin` and `asis_anual` that year; the same plus `grado`, `same_school` and `course_rank` one
-and two years later (`_t1`, `_t2`); and `finished`, `on_time` and `exit_to` for the cohort of 1° básico.
+`data/analysis/rd_sample.parquet` has one row per student and threshold, for the half of the students not used to
+find the thresholds: `distance` (prior GPA minus the threshold), `above`, `in_high` (in the higher course),
+`threshold`, `sharpness`, the group's `eta2`, `p_value`, `persistence` and `reshuffled`, `year`, `group` and
+`low_rank` (together they identify the threshold), own course size and mean prior GPA, the student's `gen_alu`,
+`edad`, `repeater` and `prior`, and their outcomes: `prom_gral`, `sit_fin` and `asis_anual` that year; the same
+plus `grado`, `same_school` and `course_rank` one and two years later (`_t1`, `_t2`); and `finished` and
+`exit_to` for the cohort of 1° básico.
 
 Unification needs `config/data_mapping.xlsx`, and the dictionary takes the variable descriptions from
 `config/descriptions/` (see `config/README.md`). The MINEDUC documentation behind them is in [`docs/mineduc/`](docs/mineduc). RAR files need 7-Zip or unrar installed.

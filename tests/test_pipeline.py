@@ -255,7 +255,7 @@ PANEL_TYPES = {"year": pl.Int32, "mrun": pl.Int64, "grado": pl.Int32, "rbd": pl.
 
 @pytest.fixture
 def tracking_project(tmp_path):
-    """Three schools with 40 students in 5° básico in 2016. Schools 500 and 700 remix their courses and put the 20
+    """Three schools with 80 students in 5° básico in 2016. Schools 500 and 700 remix their courses and put the 40
     with the best GPA of 2015 in course A and the rest in B; school 600 keeps the courses of 4°, which ignore GPA."""
     shutil.copytree(REPO / "code", tmp_path / "code")
     master = tmp_path / "code" / "masterfile_analysis.py"
@@ -266,9 +266,9 @@ def tracking_project(tmp_path):
 
     rows = []
     for school in (500, 600, 700):
-        for i in range(40):
-            mrun, prior = school * 100 + i, 4.0 + i / 20  # GPAs 4.00 to 5.95; the threshold is 5.00
-            high = i >= 20 if school in (500, 700) else i % 2 == 0
+        for i in range(80):
+            mrun, prior = school * 100 + i, round(4.0 + (i // 4) / 10, 1)  # 4 students at each GPA, 4.0 to 5.9
+            high = prior >= 5.0 if school in (500, 700) else i % 2 == 0      # the threshold is 5.0
             for year, grado, course, gpa in [(2015, 4, "AB"[i % 2], prior), (2016, 5, "A" if high else "B", prior + 0.2),
                                              (2017, 6, "A" if high else "B", prior + 0.1)]:
                 shift = None if school == 500 else 1  # school 500 has no shift, as before 2013
@@ -295,7 +295,7 @@ def tracking_project(tmp_path):
 def test_tracking_finds_the_sorting_school(tracking_project):
     groups = pl.read_parquet(tracking_project / "tracking" / "groups_2016.parquet").sort("rbd")
     assert groups[["rbd", "courses", "students", "tracked", "reshuffled"]].rows() == [
-        (500, 2, 40, True, True), (600, 2, 40, False, False), (700, 2, 40, True, True),
+        (500, 2, 80, True, True), (600, 2, 80, False, False), (700, 2, 80, True, True),
     ]
     assert groups["persistence"].to_list() == [0.5, 1.0, 0.5]  # 500 and 700 remixed their courses, 600 did not
     thresholds = pl.read_parquet(tracking_project / "tracking" / "thresholds_2016.parquet")
@@ -312,16 +312,15 @@ def test_rd_sample_compares_just_below_and_above(tracking_project):
     assert rd["finished"].all()
 
 
-def test_rd_estimates(tracking_project):
-    estimates = pl.read_csv(tracking_project.parents[1] / "results" / "rd_estimates.csv")
-    first_stage = estimates.filter((pl.col("method") == "first stage") & (pl.col("bandwidth") == 0.3)
-                                   & (pl.col("sample") == "all thresholds"))
+def test_rd_results(tracking_project):
+    results = tracking_project.parents[1] / "results"
+    estimates = pl.read_csv(results / "rd_estimates.csv").filter((pl.col("bandwidth") == 0.3) & (pl.col("spec") == "main"))
+    first_stage = estimates.filter(pl.col("kind") == "first stage")
     assert first_stage["estimate"].round(6).to_list() == [1.0]  # in the fake data the threshold is sharp
-    gpa = estimates.filter((pl.col("outcome") == "prom_gral") & (pl.col("method") == "iv") & (pl.col("bandwidth") == 0.3)
-                           & (pl.col("sample") == "all thresholds"))
+    gpa = estimates.filter(pl.col("outcome") == "prom_gral")
     assert abs(gpa["estimate"][0]) < 1e-6  # GPA is prior + 0.2 for everyone: the higher course changes nothing
-    assert (tracking_project.parents[1] / "results" / "rd_plots.png").exists()
-    assert (tracking_project.parents[1] / "results" / "rd_first_stage.png").exists()
+    assert set(pl.read_csv(results / "rd_estimates.csv")["spec"]) >= {"main", "remixed", "donut", "controls"}
+    assert (results / "rd_first_stage.png").exists() and (results / "rd_outcomes.png").exists()
 
 
 # [End-of-file] ----

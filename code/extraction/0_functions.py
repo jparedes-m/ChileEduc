@@ -50,4 +50,10 @@ def in_sample(fraction):
     every dataset, and the sample is the students below fraction (so a smaller sample is inside a bigger one)."""
     return ((pl.col("mrun").cast(pl.UInt64) + SEED) * 2654435761 % 2**32) / 2**32 < fraction
 
+
+def estimation_half():
+    """Half of the students of each year, the same on any computer: the regression discontinuity finds the
+    thresholds with this half and measures the effects with the other one."""
+    return ((pl.col("mrun").cast(pl.UInt64) + pl.col("year").cast(pl.UInt64) * 7919 + SEED) * 2654435761 % 2**32) < 2**31
+
 # [End-of-file] ----

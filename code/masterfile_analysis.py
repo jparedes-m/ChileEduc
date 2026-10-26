@@ -42,7 +42,7 @@ DATA = ROOT / "data"                        # not in git: it is far too big
 CLEAN = DATA / "clean"        # input: the clean data of flow 1
 ANALYSIS = DATA / "analysis"  # 1_selection to 5_rd_sample: the data of the study
 SAMPLE = DATA / "sample"      # 3_cohorts: the cohort panel for the students of the sample
-RESULTS = ROOT / "results"    # 6_rd_estimates, 7_rd_figure: tables and plots (in git: they are small summaries)
+RESULTS = ROOT / "results"    # 6_rd_results: tables and plots (in git: they are small summaries)
 
 # [2] Settings ----
 # grado: 0 kinder, 1-8 = 1° to 8° básico, 9-12 = 1° to 4° medio. Normal age = 5 + grado.
@@ -51,7 +51,7 @@ COHORTS = {  # each one becomes a column of the final data, holding the year the
     "cohort_kinder": {"start_grade": 0, "end_grade": 8, "entry_years": list(range(2011, 2016))},   # kinder to 8° básico
     "cohort_basica": {"start_grade": 1, "end_grade": 12, "entry_years": list(range(2002, 2013))},  # 1° básico to 4° medio
 }
-# Tracking (4_tracking) and the regression discontinuity sample (5_rd_sample)
+# Tracking (4_tracking) and the regression discontinuity (5_rd_sample, 6_rd_results)
 TRACKING_MIN_COURSE_SIZE = 10   # students with a prior GPA a course needs to be compared
 TRACKING_PERMUTATIONS = 100     # random reassignments to test sorting against
 TRACKING_ALPHA = 0.05           # a group is tracked if sorting is this unlikely under random assignment
@@ -61,6 +61,8 @@ RD_MIN_SHARPNESS = 0.85         # thresholds that put at least this share of the
 RD_BANDWIDTH = 0.5              # GPA points around the threshold kept in the sample of students just below and above
 RD_ESTIMATE_BANDWIDTHS = [0.2, 0.3, 0.5]  # bandwidths to estimate with (GPAs have 1 decimal, so 0.1 is too narrow)
 RD_MAIN_BANDWIDTH = 0.3         # the one printed in the main table
+# The specifications (main, remixed courses only, without students at the threshold, with controls, básica,
+# media, 2003-2012, 2013-2023) are listed in SPECS at the top of analysis/6_rd_results.py.
 
 SAMPLE_FRACTION = 0.02  # share of students in the sample of the cohort panel
 SEED = 42  # the same in masterfile_extraction.py, so both flows sample the same students
@@ -84,7 +86,6 @@ source("analysis/2_attendance.py")
 source("analysis/3_cohorts.py")
 source("analysis/4_tracking.py")
 source("analysis/5_rd_sample.py")
-source("analysis/6_rd_estimates.py")
-source("analysis/7_rd_figure.py")
+source("analysis/6_rd_results.py")
 
 # [End-of-file] ----
