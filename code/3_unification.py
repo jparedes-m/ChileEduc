@@ -53,6 +53,24 @@ TYPES = {
 REGULAR_ENSE = [10, 110, 310, 410, 510, 610, 710, 810, 910]
 
 
+BIRTH_DATES = ("fec_nac_alu", "birth_date_stud")
+
+
+def as_birth_month(column):
+    """Birth date as the number AAAAMM, from the formats MINEDUC uses in different years:
+    199602, 19960215, 1996215 (month without its zero) and 'Feb 15 1996' (performance 2002)."""
+    text = pl.col(column).str.strip_chars().str.replace_all(r"\s+", " ")
+    digits, length = text.str.contains(r"^\d+$"), text.str.len_chars()
+    return (
+        pl.when(digits & (length == 6)).then(text)
+        .when(digits & (length == 8)).then(text.str.slice(0, 6))
+        .when(digits & (length == 7)).then(text.str.slice(0, 4) + "0" + text.str.slice(4, 1))
+        .otherwise(text.str.strptime(pl.Date, "%b %d %Y", strict=False).dt.strftime("%Y%m"))
+        .cast(pl.Int32, strict=False)
+        .alias(column)
+    )
+
+
 def as_type(column, dtype):
     """Text -> number. Accepts decimal commas (6,5) and '10.0'. What cannot be read becomes null."""
     text = pl.col(column).str.strip_chars()
@@ -110,17 +128,11 @@ for dataset in DATASETS:
         types = TYPES[dataset]
         numeric = [c for c in df.columns if types.get(c, pl.String) != pl.String]
         df = df.with_columns(pl.when(pl.col(c).str.strip_chars() == ".").then(None).otherwise(pl.col(c)).alias(c) for c in numeric)
-        typed = df.select(as_type(c, types.get(c, pl.String)) for c in df.columns)
+        typed = df.select(as_birth_month(c) if c in BIRTH_DATES else as_type(c, types.get(c, pl.String)) for c in df.columns)
         for c in typed.columns:
             lost = ((df[c].str.strip_chars().fill_null("") != "") & typed[c].is_null()).sum()
             if lost:
                 print(f"  {f.stem}: {lost} values of {c} are not numbers, set to null")
-
-        # Birth dates come as AAAAMM in some years and AAAAMMDD in others: keep AAAAMM everywhere
-        typed = typed.with_columns(
-            pl.when(pl.col(c) > 999_999).then(pl.col(c) // 100).otherwise(pl.col(c)).alias(c)
-            for c in ("fec_nac_alu", "birth_date_stud") if c in typed.columns
-        )
 
         # Regular education only
         if dataset == "kinder":

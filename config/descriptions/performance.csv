@@ -25,7 +25,7 @@ cod_tip_cur,Índice de tipo de curso,0: Curso simple; 1-6: Curso combinado,En b�
 cod_des_cur,Descripción del curso (solo media TP),0: No aplica; 1: Sólo liceo; 2: Dual; 3: Otro,
 mrun,Máscara del RUN del estudiante,,Identificador del estudiante.
 gen_alu,Género del estudiante,0: Sin información; 1: Masculino; 2: Femenino,En 2023 MINEDUC eliminó 2 registros con género no binario para proteger su identidad.
-fec_nac_alu,Fecha de nacimiento del estudiante (AAAAMM),,MINEDUC la publica como AAAAMMDD en algunos años; la base limpia la deja siempre como AAAAMM.
+fec_nac_alu,Fecha de nacimiento del estudiante (AAAAMM),,"En 2002 viene como texto en inglés (Sep 16 1962). La base limpia la deja siempre como AAAAMM; MINEDUC la publica como AAAAMMDD hasta 2014 y como AAAAMM desde 2015, con unas 20 filas por año escritas sin el cero del mes (1990517)."
 edad_alu,Edad al 30 de junio del año escolar,,"Desde 2016, las edades no validadas con el Registro Civil (99 o más; 25 o más, o 5 o menos en básica y media niños y jóvenes) están vacías."
 int_alu,Indicador de alumno integrado: estudiante con necesidades educativas especiales permanentes o transitorias (Decreto 170/2010),0: No; 1: Sí; .: Sin información,
 gd_alu,Indica si el alumno es atendido en un grupo diferencial (solo básica niños y jóvenes),0: No; 1: Sí,Solo 2013-2015.

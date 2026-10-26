@@ -117,7 +117,7 @@ def project(tmp_path):
 
     # A zip inside a zip, UTF-8 with BOM
     inner = tmp_path / "inner.zip"
-    write_zip(inner, {"asistencia_marzo_2015.csv": "\ufeffAGNO;MES;MRUN;COD_ENSE;FEC_NAC_ALU\n2015;3;1;110;20050314\n2015;3;2;110;200506\n".encode()})
+    write_zip(inner, {"asistencia_marzo_2015.csv": "\ufeffAGNO;MES;MRUN;COD_ENSE;FEC_NAC_ALU\n2015;3;1;110;20050314\n2015;3;2;110;200506\n2015;3;5;110;1990517\n2015;3;6;110;Sep 16 1962\n".encode()})
     write_zip(raw / "assistance" / "assistance_2015_03.zip", {"carpeta/asistencia.zip": inner.read_bytes()})
 
     result = subprocess.run([sys.executable, "masterfile.py"], cwd=tmp_path, capture_output=True, text=True)
@@ -141,9 +141,9 @@ def test_unification(project):
 
     asis = pl.read_parquet(project / "data" / "clean" / "assistance" / "assistance_2015_03.parquet")
     assert asis.columns == ["year", "month", "mrun", "cod_ense", "fec_nac_alu", "agno"]  # AGNO is unmapped: an extra
-    assert asis["fec_nac_alu"].to_list() == [200503, 200506]  # AAAAMMDD becomes AAAAMM
-    assert asis["year"].to_list() == [2015, 2015]
-    assert asis["month"].to_list() == [3, 3]
+    assert asis["fec_nac_alu"].to_list() == [200503, 200506, 199005, 196209]  # every format becomes AAAAMM
+    assert asis["year"].to_list() == [2015] * 4
+    assert asis["month"].to_list() == [3] * 4
 
 
 def test_kinder_keeps_the_three_programs(project):

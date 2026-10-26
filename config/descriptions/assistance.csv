@@ -20,7 +20,7 @@ cod_grado,Código de grado,Con cod_ense 10: 1-5 = sala cuna a kinder. Con 110: 1
 let_cur,Letra del curso,,"Con rbd, cod_ense y cod_grado identifica el curso."
 mrun,Identificador único del estudiante (máscara del RUN),,"Un estudiante puede tener más de una fila en un mes si se cambió de colegio, de curso o de nivel."
 gen_alu,Sexo del estudiante,0: Sin información; 1: Hombre; 2: Mujer; 3: No binario,En diciembre de 2023 MINEDUC eliminó 2 registros con género no binario para proteger su identidad.
-fec_nac_alu,Fecha de nacimiento del estudiante (AAAAMM),"190001, 180001: Sin información",MINEDUC la publica como AAAAMMDD en algunos años; la base limpia la deja siempre como AAAAMM. Las fechas atípicas se deben a errores al ingresar el RUN en el SIGE.
+fec_nac_alu,Fecha de nacimiento del estudiante (AAAAMM),"190001, 180001: Sin información","La base limpia la deja siempre como AAAAMM; MINEDUC la publica como AAAAMMDD hasta 2014 y como AAAAMM desde 2015, con unas 20 filas por año escritas sin el cero del mes (1990517). En 2018 falta en 7,1 millones de filas (20% del año). Las fechas atípicas se deben a errores al ingresar el RUN en el SIGE."
 cod_com_alu,Código oficial de la comuna de residencia (autodeclarado y voluntario),0: Sin información (valor por defecto),
 nom_com_alu,Nombre de la comuna de residencia,,
 dias_asistidos,Número total de días asistidos en el mes,,Puede ser 0 para retirados que siguen en el sistema. En 38 filas supera a dias_trabajados (errores de registro).
