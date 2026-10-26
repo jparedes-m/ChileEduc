@@ -62,7 +62,8 @@ for year in sorted(panel_files):
     course_sizes = with_prior.group_by(COURSE).agg(n=pl.len())
     big = course_sizes.filter(pl.col("n") >= TRACKING_MIN_COURSE_SIZE)
     groups = big.group_by(GROUP).agg(courses=pl.len()).filter(pl.col("courses") >= 2).with_row_index("group")
-    d = with_prior.join(big.select(COURSE), on=COURSE).join(groups.select(*GROUP, "group"), on=GROUP, nulls_equal=True)
+    # nulls_equal: cod_jor is empty before 2013, and an empty shift still has to match itself
+    d = with_prior.join(big.select(COURSE), on=COURSE, nulls_equal=True).join(groups.select(*GROUP, "group"), on=GROUP, nulls_equal=True)
 
     # 1. Sorting, against random reassignments
     observed = eta2(d, "prior").with_columns(higher=pl.lit(0, pl.Int32))

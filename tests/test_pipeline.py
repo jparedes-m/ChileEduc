@@ -271,9 +271,10 @@ def tracking_project(tmp_path):
             high = i >= 20 if school == 500 else i % 2 == 0
             for year, grado, course, gpa in [(2015, 4, "AB"[i % 2], prior), (2016, 5, "A" if high else "B", prior + 0.2),
                                              (2017, 6, "A" if high else "B", prior + 0.1)]:
+                shift = None if school == 500 else 1  # school 500 has no shift, as before 2013
                 rows.append({"year": year, "mrun": mrun, "grado": grado, "rbd": school, "cod_ense": 110, "let_cur": course,
-                             "cod_tip_cur": 0, "cod_jor": 1, "gen_alu": 1 + i % 2, "edad": 5 + grado, "rezago": 0,
-                             "prom_gral": gpa, "asistencia": 90, "sit_fin": "P"})
+                             "cod_tip_cur": None if shift is None else 0, "cod_jor": shift, "gen_alu": 1 + i % 2,
+                             "edad": 5 + grado, "rezago": 0, "prom_gral": gpa, "asistencia": 90, "sit_fin": "P"})
     analysis = tmp_path / "data" / "analysis"
     panel = pl.DataFrame(rows, schema=PANEL_TYPES)
     for year in (2015, 2016, 2017):
